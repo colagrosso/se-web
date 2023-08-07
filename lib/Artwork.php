@@ -292,7 +292,7 @@ class Artwork extends PropertiesBase{
 	}
 
 	/** @return array<ArtworkTag> */
-	private static function ParseArtworkTags(?string $artworkTags): array{
+	public static function ParseArtworkTags(?string $artworkTags): array{
 		if (!$artworkTags) return array();
 
 		$artworkTags = array_map('trim', explode(',', $artworkTags)) ?? array();
