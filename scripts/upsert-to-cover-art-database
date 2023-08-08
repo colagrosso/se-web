@@ -34,7 +34,7 @@ if(!$repoDir || !$ebookWwwFilesystemPath){
 }
 
 if($verbose){
-	print("repoDir: $repoDir\n");
+	print("\nrepoDir: $repoDir\n");
 	print("ebookWwwFilesystemPath: $ebookWwwFilesystemPath\n");
 }
 
@@ -47,14 +47,65 @@ $artistName = NullIfEmpty($xml->xpath('/package/metadata/dc:contributor[@id="art
 $rawColophon = file_get_contents($ebookWwwFilesystemPath . '/text/colophon.xhtml');
 preg_match('|a painting completed \w+ (\d+)|ius', $rawColophon, $matches);
 if(sizeof($matches) == 2){
-	$year = (int)$matches[1];
+	$completedYear = (int)$matches[1];
 }
 
 $colophonXml = new SimpleXMLElement(str_replace('xmlns=', 'ns=', $rawColophon));
-$title = NullIfEmpty($colophonXml->xpath('/html/body/main/section/p/i[@epub:type="se:name.visual-art.painting"]'));
+$artworkName = NullIfEmpty($colophonXml->xpath('/html/body/main/section/p/i[@epub:type="se:name.visual-art.painting"]'));
 
 if($verbose){
 	print("artistName: $artistName\n");
-	print("year: $year\n");
-	print("title: $title\n");
+	print("completedYear: $completedYear\n");
+	print("artworkName: $artworkName\n");
 }
+$artistUrlName = Formatter::MakeUrlSafe($artistName);
+$artworkUrlName = Formatter::MakeUrlSafe($artworkName);
+
+$artwork = Artwork::GetByUrlPath($artistUrlName, $artworkUrlName);
+
+if($artwork === null){
+	if($verbose){
+		printf("No existing artwork found at %s/%s, inserting new artwork.\n", $artistUrlName, $artworkUrlName);
+	}
+
+	// TODO: Proper handling of existing Artists and alternate spellings. Check notes.
+	$artist = new Artist();
+	$artist->Name = $artistName;
+	$artist->GetOrCreate();
+
+	$artwork = new Artwork();
+	$artwork->Artist = $artist;
+	$artwork->Name = $artworkName;
+	$artwork->CompletedYear = $completedYear;
+	$artwork->CompletedYearIsCirca = false;
+	$artwork->Created = new DateTime();
+	$artwork->MuseumPage = 'See review';
+	$artwork->Status = 'in_use';
+	$artwork->EbookWwwFilesystemPath = $ebookWwwFilesystemPath;
+
+	$coverSourceFile = tempnam('/tmp', 'cover.source.jpg.');
+	shell_exec("git show HEAD:images/cover.source.jpg > $coverSourceFile");
+
+	$artwork->Create($coverSourceFile);
+
+}else{
+	if($verbose){
+		printf("Existing artwork found at %s/%s, updating its status.\n", $artistUrlName, $artworkUrlName);
+	}
+
+	if($artwork->CompletedYear != $completedYear){
+		printf("Error: Existing database artwork completed year, %d, does not match ebook colophon completed year, %d. Not updating database.\n", $artwork->CompletedYear, $completedYear);
+		print("Artwork DB object:\n");
+		print_r($artwork);
+		exit('Error: completed year');
+	}
+
+	if($artwork->Status === 'in_use'){
+		printf("Error: Existing database artwork already marked as 'in_use' to ebook '%s'. Not updating database.\n", $artwork->EbookWwwFilesystemPath);
+		print("Artwork DB object:\n");
+		print_r($artwork);
+		exit('Error: in_use');
+	}
+}
+
+$artwork->MarkInUse($ebookWwwFilesystemPath);
