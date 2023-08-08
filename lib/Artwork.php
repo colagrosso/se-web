@@ -409,6 +409,21 @@ class Artwork extends PropertiesBase{
 		', [$this->Status, $this->ArtworkId]);
 	}
 
+	/**
+	 * @throws \Exceptions\ValidationException
+	 */
+	public function MarkInUse(string $ebookWwwFilesystemPath): void{
+		$this->Status = 'in_use';
+		$this->EbookWwwFilesystemPath = $ebookWwwFilesystemPath;
+
+		Db::Query('
+			UPDATE Artworks
+			set Status = ?,
+			EbookWwwFilesystemPath = ?
+			where ArtworkId = ?
+		', [$this->Status, $this->EbookWwwFilesystemPath, $this->ArtworkId]);
+	}
+
 	public function Delete(): void{
 		Db::Query('
 			DELETE
