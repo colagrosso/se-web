@@ -402,7 +402,7 @@ do
 			printf "Updating/inserting cover in the cover art database ... "
 		fi
 
-		output=$("${scriptsDir}/upsert-to-cover-art-database" -v --repoDir "${repoDir}" --ebookWwwFilesystemPath "${webDir}")
+		output=$("${scriptsDir}"/upsert-to-cover-art-database -v --repoDir "${repoDir}" --workDir "${workDir}" --ebookWwwFilesystemPath "${webDir}")
 		if [ "${verbose}" = "true" ]; then
 			echo "${output}"
 		fi
