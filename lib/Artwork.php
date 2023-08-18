@@ -309,13 +309,19 @@ class Artwork extends PropertiesBase{
 		$this->ValidateImageUpload($uploadPath);
 
 		try{
+			$log->Write('uploadPath: ' . $uploadPath);
+			$log->Write('is uploaded: ' . is_uploaded_file($uploadPath));
 			$thumbPath = tempnam(WEB_ROOT . COVER_ART_UPLOAD_PATH, "tmp-thumb-");
+			$log->Write($thumbPath);
 			$imagePath = tempnam(WEB_ROOT . COVER_ART_UPLOAD_PATH, "tmp-image-");
+			$log->Write($imagePath);
 
 			self::GenerateThumbnail($uploadPath, $thumbPath);
+			$log->Write('generated thumbnail');
 			if(!move_uploaded_file($uploadPath, $imagePath)){
 				throw new \Safe\Exceptions\FilesystemException;
 			}
+			$log->Write('moved uploaded file');
 		} catch (\Safe\Exceptions\FilesystemException|\Safe\Exceptions\ImageException $exception){
 			$log->Write("Failed to create temp thumbnail or uploaded image.");
 			$log->Write($exception);
@@ -342,6 +348,64 @@ class Artwork extends PropertiesBase{
 			throw new \Exceptions\InvalidImageUploadException("Your artwork was submitted but something went wrong. Please contact site administrator.");
 		}
 	}
+
+	/**
+	 * @throws \Exceptions\ValidationException
+	 * @throws \Exceptions\InvalidImageUploadException
+	 */
+	public function CreateFromFilesystem(string $uploadPath): void{
+		$log = new Log(ARTWORK_UPLOADS_LOG_FILE_PATH);
+
+		$this->Validate();
+		$this->ValidateImageUpload($uploadPath);
+
+		try{
+			$log->Write('uploadPath: ' . $uploadPath);
+			$log->Write('is uploaded: ' . is_uploaded_file($uploadPath));
+			$thumbPath = tempnam(WEB_ROOT . COVER_ART_UPLOAD_PATH, "tmp-thumb-");
+			chmod($thumbPath, 0660);
+			$log->Write($thumbPath);
+			$imagePath = tempnam(WEB_ROOT . COVER_ART_UPLOAD_PATH, "tmp-image-");
+			chmod($imagePath, 0660);
+			$log->Write($imagePath);
+
+			self::GenerateThumbnail($uploadPath, $thumbPath);
+			$log->Write('generated thumbnail');
+			if(!copy($uploadPath, $imagePath)){
+				throw new \Safe\Exceptions\FilesystemException;
+			}
+			$log->Write('moved uploaded file');
+		} catch (\Safe\Exceptions\FilesystemException|\Safe\Exceptions\ImageException $exception){
+			$log->Write("Failed to create temp thumbnail or uploaded image.");
+			$log->Write($exception);
+
+			throw new \Exceptions\InvalidImageUploadException("Could not save uploaded image.");
+		}
+
+		/** @var ArtworkTag $artworkTag */
+		foreach ($this->ArtworkTags as $artworkTag) {
+			$artworkTag->GetOrCreate();
+		}
+			$log->Write('past tags');
+
+		$this->Artist->GetOrCreate();
+			$log->Write('artist get or create');
+		$this->Insert();
+			$log->Write('past insert');
+
+		try{
+			rename($thumbPath, WEB_ROOT . $this->ThumbUrl);
+			rename($imagePath, WEB_ROOT . $this->ImageUrl);
+			$log->Write('past thumb and image renames');
+		} catch (\Safe\Exceptions\FilesystemException $exception){
+			$log->Write("Failed to store image or thumbnail for uploaded artwork [$this->ArtworkId].");
+			$log->Write("Temporary image file at [$imagePath], temporary thumb file at [$thumbPath].");
+			$log->Write($exception);
+
+			throw new \Exceptions\InvalidImageUploadException("Your artwork was submitted but something went wrong. Please contact site administrator.");
+		}
+	}
+
 
 	/**
 	 * @throws \Safe\Exceptions\ImageException
@@ -412,6 +476,25 @@ class Artwork extends PropertiesBase{
 			set Status = ?
 			where ArtworkId = ?
 		', [$this->Status, $this->ArtworkId]);
+	}
+
+	/**
+	 * @throws \Exceptions\ValidationException
+	 */
+	public function MarkInUse(string $ebookWwwFilesystemPath): void{
+		$log = new Log(ARTWORK_UPLOADS_LOG_FILE_PATH);
+		$this->Status = 'in_use';
+		$this->EbookWwwFilesystemPath = $ebookWwwFilesystemPath;
+			$log->Write('set vars');
+			$log->Write('id: ' . $this->ArtworkId);
+
+		Db::Query('
+			UPDATE Artworks
+			set Status = ?,
+			EbookWwwFilesystemPath = ?
+			where ArtworkId = ?
+		', [$this->Status, $this->EbookWwwFilesystemPath, $this->ArtworkId]);
+			$log->Write('past update query');
 	}
 
 	public function Delete(): void{
