@@ -4,6 +4,7 @@ $title = $title ?? '';
 $highlight = $highlight ?? '';
 $description = $description ?? '';
 $manual = $manual ?? false;
+$artwork = $artwork ?? false;
 $colorScheme = $_COOKIE['color-scheme'] ?? 'auto';
 $isXslt = $isXslt ?? false;
 $feedUrl = $feedUrl ?? null;
@@ -38,7 +39,7 @@ if(!$isXslt){
 	<? if(Template::IsEreaderBrowser()){ ?>
 	<link rel="preload" as="font" href="/fonts/league-spartan-bold.ttf" type="font/ttf" crossorigin="anonymous"/>
 	<link href="/css/ereader.css?version=<?= filemtime(WEB_ROOT . '/css/ereader.css') ?>" media="screen" rel="stylesheet" type="text/css"/>
-	<? } else { ?>
+	<? }else{ ?>
 	<link href="/css/core.css?version=<?= filemtime(WEB_ROOT . '/css/core.css') ?>" media="screen" rel="stylesheet" type="text/css"/>
 	<? if($colorScheme == 'auto' || $colorScheme == 'dark'){ ?>
 	<link href="/css/dark.css?version=<?= filemtime(WEB_ROOT . '/css/dark.css') ?>" media="screen<? if($colorScheme == 'auto'){ ?> and (prefers-color-scheme: dark)<? } ?>" rel="stylesheet" type="text/css"/>
@@ -49,6 +50,9 @@ if(!$isXslt){
 	<? if($colorScheme == 'auto' || $colorScheme == 'dark'){ ?>
 	<link href="/css/manual-dark.css?version=<?= filemtime(WEB_ROOT . '/css/manual-dark.css') ?>" media="screen<? if($colorScheme == 'auto'){ ?> and (prefers-color-scheme: dark)<? } ?>" rel="stylesheet" type="text/css"/>
 	<? } ?>
+	<? } ?>
+	<? if($artwork){ ?>
+	<link href="/css/artwork.css?version=<?= filemtime(WEB_ROOT . '/css/artwork.css') ?>" media="screen" rel="stylesheet" type="text/css"/>
 	<? } ?>
 	<link href="/apple-touch-icon-120x120.png" rel="apple-touch-icon" sizes="120x120"/>
 	<link href="/apple-touch-icon-152x152.png" rel="apple-touch-icon" sizes="152x152"/>

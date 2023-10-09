@@ -24,6 +24,7 @@ const REPOS_PATH =			SITE_ROOT . '/ebooks';
 const TEMPLATES_PATH =			SITE_ROOT . '/web/templates';
 const MANUAL_PATH =			WEB_ROOT . '/manual';
 const EBOOKS_DIST_PATH =		WEB_ROOT . '/ebooks/';
+const COVER_ART_UPLOAD_PATH =		'/images/uploads/';
 
 const DATABASE_DEFAULT_DATABASE = 	'se';
 const DATABASE_DEFAULT_HOST = 		'localhost';
@@ -33,6 +34,15 @@ const SORT_NEWEST = 'newest';
 const SORT_AUTHOR_ALPHA = 'author-alpha';
 const SORT_READING_EASE = 'reading-ease';
 const SORT_LENGTH = 'length';
+
+const COVER_THUMBNAIL_SIZE = 350;
+const COVER_ARTWORK_PER_PAGE = 50;
+const COVER_ARTWORK_STATUS_ALL = 'all';
+const COVER_ARTWORK_STATUS_APPROVED = 'approved';
+const COVER_ARTWORK_STATUS_IN_USE = 'in_use';
+const SORT_COVER_ARTWORK_CREATED_NEWEST = 'created-newest';
+const SORT_COVER_ARTIST_ALPHA = 'artist-alpha';
+const SORT_COVER_ARTWORK_COMPLETED_NEWEST = 'completed-newest';
 
 const CAPTCHA_IMAGE_HEIGHT = 72;
 const CAPTCHA_IMAGE_WIDTH = 230;
@@ -92,6 +102,7 @@ const GITHUB_WEBHOOK_LOG_FILE_PATH =	'/var/log/local/webhooks-github.log'; // Mu
 const POSTMARK_WEBHOOK_LOG_FILE_PATH =	'/var/log/local/webhooks-postmark.log'; // Must be writable by `www-data` Unix user.
 const ZOHO_WEBHOOK_LOG_FILE_PATH =	'/var/log/local/webhooks-zoho.log'; // Must be writable by `www-data` Unix user.
 const DONATIONS_LOG_FILE_PATH =		'/var/log/local/donations.log'; // Must be writable by `www-data` Unix user.
+const ARTWORK_UPLOADS_LOG_FILE_PATH =	'/var/log/local/artwork-uploads.log'; // Must be writable by `www-data` Unix user.
 
 define('PD_YEAR', intval(gmdate('Y')) - 96);
 define('PD_STRING', 'January 1, ' . (PD_YEAR + 1));
