@@ -1,7 +1,7 @@
-CREATE TABLE `Tags` (
-  `TagId` int(10) unsigned NOT NULL AUTO_INCREMENT,
+CREATE TABLE `LocSubjects` (
+  `LocSubjectId` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `Name` varchar(255) NOT NULL,
-  PRIMARY KEY (`TagId`),
+  PRIMARY KEY (`LocSubjectId`),
   UNIQUE KEY `idxUnique` (`Name`),
   FULLTEXT `idxSearch` (`Name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
