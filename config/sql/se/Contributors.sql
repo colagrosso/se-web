@@ -9,6 +9,5 @@ CREATE TABLE `Contributors` (
   `NacoafUrl` varchar(255) NULL,
   `SortOrder` tinyint(3) unsigned NOT NULL,
   KEY `index1` (`EbookId`),
-  KEY `index2` (`UrlName`),
-  FULLTEXT `idxSearch` (`Name`)
+  KEY `index2` (`UrlName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

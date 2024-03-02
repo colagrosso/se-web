@@ -25,7 +25,8 @@ CREATE TABLE `Ebooks` (
   `MetadataModified` datetime NOT NULL,
   `TextSinglePageSizeNumber` float NULL,
   `TextSinglePageSizeUnit` char(1) NULL,
+  `IndexableText` text NOT NULL,
   PRIMARY KEY (`EbookId`),
   UNIQUE KEY `index1` (`Identifier`),
-  FULLTEXT `idxSearch` (`Title`, `FullTitle`, `AlternateTitle`, `Description`, `LongDescription`)
+  FULLTEXT `idxSearch` (`IndexableText`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
