@@ -20,8 +20,9 @@ use function Safe\shell_exec;
  * @property array<Contributor> $Translators
  * @property array<Contributor> $Contributors
  * @property ?array<string> $TocEntries
+ * @property string $IndexableText
  */
-class Ebook{
+class Ebook extends Accessor{
 	public ?int $EbookId = null;
 	public string $WwwFilesystemPath;
 	public string $RepoFilesystemPath;
@@ -75,6 +76,42 @@ class Ebook{
 	public ?string $TextSinglePageSizeNumber = null;
 	public ?string $TextSinglePageSizeUnit = null;
 	public $TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
+	protected ?string $_IndexableText = null;
+
+	protected function GetIndexableText(): string{
+		if($this->_IndexableText === null){
+			$this->_IndexableText = $this->FullTitle ?? $this->Title;
+
+			$this->_IndexableText .= ' ' . $this->AlternateTitle;
+
+			foreach($this->Collections as $collection){
+				$this->_IndexableText .= ' ' . $collection->Name;
+			}
+
+			foreach($this->Authors as $author){
+				$this->_IndexableText .= ' ' . $author->Name;
+			}
+
+			foreach($this->Tags as $tag){
+				$this->_IndexableText .= ' ' . $tag->Name;
+			}
+
+			foreach($this->LocSubjects as $subject){
+				$this->_IndexableText .= ' ' . $subject->Name;
+			}
+
+			if($this->TocEntries !== null){
+				foreach($this->TocEntries as $item){
+					$this->_IndexableText .= ' ' . $item;
+				}
+			}
+
+			$this->_IndexableText .= ' ' . $this->Description;
+			$this->_IndexableText .= ' ' . $this->LongDescription;
+		}
+
+		return $this->_IndexableText;
+	}
 
 	public function Validate(): void{
 		$error = new Exceptions\ValidationException();
@@ -110,8 +147,9 @@ class Ebook{
 			INSERT into Ebooks (Identifier, WwwFilesystemPath, RepoFilesystemPath, KindleCoverUrl, EpubUrl,
 				AdvancedEpubUrl, KepubUrl, Azw3Url, DistCoverUrl, Title, FullTitle, AlternateTitle,
 				Description, LongDescription, Language, WordCount, ReadingEase, GitHubUrl, WikipediaUrl,
-				Released, MetadataModified, TextSinglePageSizeNumber, TextSinglePageSizeUnit)
+				Released, MetadataModified, TextSinglePageSizeNumber, TextSinglePageSizeUnit, IndexableText)
 			values (?,
+				?,
 				?,
 				?,
 				?,
@@ -139,7 +177,8 @@ class Ebook{
 				$this->FullTitle, $this->AlternateTitle, $this->Description, $this->LongDescription,
 				$this->Language, $this->WordCount, $this->ReadingEase, $this->GitHubUrl, $this->WikipediaUrl,
 				//$this->Released, $this->MetadataModified]);
-				$this->Created, $this->Updated, floatval($this->TextSinglePageSizeNumber), $this->TextSinglePageSizeUnit]);
+				$this->Created, $this->Updated, floatval($this->TextSinglePageSizeNumber), $this->TextSinglePageSizeUnit,
+				$this->IndexableText]);
 
 		$this->EbookId = Db::GetLastInsertedId();
 
@@ -186,7 +225,8 @@ class Ebook{
 			Released = ?,
 			MetadataModified = ?,
 			TextSinglePageSizeNumber = ?,
-			TextSinglePageSizeUnit = ?
+			TextSinglePageSizeUnit = ?,
+			IndexableText = ?
 			where
 			EbookId = ?
 		', [$this->Identifier, $this->WwwFilesystemPath, $this->RepoFilesystemPath, $this->KindleCoverUrl, $this->EpubUrl,
@@ -195,7 +235,7 @@ class Ebook{
 				$this->Language, $this->WordCount, $this->ReadingEase, $this->GitHubUrl, $this->WikipediaUrl,
 				//$this->Released, $this->MetadataModified]);
 				$this->Created, $this->Updated, floatval($this->TextSinglePageSizeNumber), $this->TextSinglePageSizeUnit,
-				$this->EbookId]);
+				$this->IndexableText, $this->EbookId]);
 
 		$this->DeleteTags();
 		$this->InsertTags();
