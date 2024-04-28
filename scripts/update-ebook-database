@@ -23,7 +23,7 @@ if($verbose){
 	print("ebookWwwFilesystemPath: $ebookWwwFilesystemPath\n");
 }
 
-$ebook = new Ebook($ebookWwwFilesystemPath);
+$ebook = Ebook::FromFilesystem($ebookWwwFilesystemPath);
 
 if($verbose){
 	print("Title: $ebook->Title\n");
