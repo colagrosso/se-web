@@ -16,30 +16,37 @@ use function Safe\shell_exec;
  * @property array<Collection> $Collections
  * @property array<EbookSource> $Sources
  * @property array<Contributor> $Authors
+ * @property string $AuthorsHtml
+ * @property string $AuthorsUrl
  * @property array<Contributor> $Illustrators
  * @property array<Contributor> $Translators
  * @property array<Contributor> $Contributors
  * @property ?array<string> $TocEntries
+ * @property string $Url
+ * @property bool $HasDownloads
+ * @property string $UrlSafeIdentifier
+ * @property string $HeroImageUrl
+ * @property string $ContributorsHtml
+ * @property string $TitleWithCreditsHtml
+ * @property string $TextUrl
+ * @property string $TextSinglePageUrl
+ * @property string $TextSinglePageSizeNumber
+ * @property string $TextSinglePageSizeUnit
  * @property string $IndexableText
  */
 class Ebook extends Accessor{
 	public ?int $EbookId = null;
 	public string $WwwFilesystemPath;
 	public string $RepoFilesystemPath;
-	public string $Url;
 	public string $KindleCoverUrl;
 	public string $EpubUrl;
 	public string $AdvancedEpubUrl;
 	public string $KepubUrl;
 	public string $Azw3Url;
-	public bool $HasDownloads;
-	public $GitCommits = [];
 	public $Tags = [];
 	public $LocSubjects = [];
 	public $Collections = [];
 	public string $Identifier;
-	public string $UrlSafeIdentifier;
-	public string $HeroImageUrl;
 	public string $HeroImageAvifUrl;
 	public string $HeroImage2xUrl;
 	public string $HeroImage2xAvifUrl;
@@ -56,32 +63,303 @@ class Ebook extends Accessor{
 	public ?string $Language = null;
 	public int $WordCount;
 	public float $ReadingEase;
-	public string $ReadingEaseDescription;
-	public string $ReadingTime;
 	public ?string $GitHubUrl = null;
 	public ?string $WikipediaUrl = null;
 	public $Sources = [];
-	public $Authors = [];
-	public string $AuthorsHtml;
-	public string $AuthorsUrl; // This is a single URL even if there are multiple authors; for example, /ebooks/karl-marx_friedrich-engels/
-	public $Illustrators = [];
-	public $Translators = [];
-	public $Contributors = [];
-	public ?string $ContributorsHtml = null;
-	public string $TitleWithCreditsHtml = '';
 	public DateTimeImmutable $Created;
 	public DateTimeImmutable $Updated;
-	public string $TextUrl;
-	public string $TextSinglePageUrl;
-	public ?string $TextSinglePageSizeNumber = null;
-	public ?string $TextSinglePageSizeUnit = null;
 	public ?int $TextSinglePageByteCount = null;
 	public $TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
+	protected $_GitCommits = null;
+	protected ?string $_Url = null;
+	protected ?bool $_HasDownloads = null;
+	protected ?string $_UrlSafeIdentifier = null;
+	protected ?string $_HeroImageUrl = null;
+	protected ?string $_ReadingEaseDescription = null;
+	protected ?string $_ReadingTime = null;
+	protected $_Authors = null;
+	protected ?string $_AuthorsHtml = null;
+	protected ?string $_AuthorsUrl = null; // This is a single URL even if there are multiple authors; for example, /ebooks/karl-marx_friedrich-engels/
+	protected $_Illustrators = null;
+	protected $_Translators = null;
+	protected $_Contributors = null;
+	protected ?string $_ContributorsHtml = null;
+	protected ?string $_TitleWithCreditsHtml = null;
+	protected ?string $_TextUrl = null;
+	protected ?string $_TextSinglePageUrl = null;
+	protected ?string $_TextSinglePageSizeNumber = null;
+	protected ?string $_TextSinglePageSizeUnit = null;
 	protected ?string $_IndexableText = null;
 
 	// *******
 	// GETTERS
 	// *******
+
+	protected function GetGitCommits(): array{
+		if($this->_GitCommits === null){
+			$this->_GitCommits = Db::Query('
+							SELECT *
+							from GitCommits
+							where EbookId = ?
+							order by Created desc
+						', [$this->EbookId], 'GitCommit');
+		}
+
+		return $this->_GitCommits;
+	}
+
+	protected function GetReadingEaseDescription(): string{
+		if($this->_ReadingEaseDescription === null){
+			if($this->ReadingEase > 89){
+				$this->_ReadingEaseDescription = 'very easy';
+			}
+
+			if($this->ReadingEase >= 79 && $this->ReadingEase <= 89){
+				$this->_ReadingEaseDescription = 'easy';
+			}
+
+			if($this->ReadingEase > 69 && $this->ReadingEase <= 79){
+				$this->_ReadingEaseDescription = 'fairly easy';
+			}
+
+			if($this->ReadingEase > 59 && $this->ReadingEase <= 69){
+				$this->_ReadingEaseDescription = 'average difficulty';
+			}
+
+			if($this->ReadingEase > 49 && $this->ReadingEase <= 59){
+				$this->_ReadingEaseDescription = 'fairly difficult';
+			}
+
+			if($this->ReadingEase > 39 && $this->ReadingEase <= 49){
+				$this->_ReadingEaseDescription = 'difficult';
+			}
+
+			if($this->ReadingEase <= 39){
+				$this->_ReadingEaseDescription = 'very difficult';
+			}
+		}
+
+		return $this->_ReadingEaseDescription;
+	}
+
+	protected function GetReadingTime(): string{
+		if($this->_ReadingTime === null){
+			$readingTime = ceil($this->WordCount / AVERAGE_READING_WORDS_PER_MINUTE);
+			$this->_ReadingTime = (string)$readingTime;
+
+			if($readingTime < 60){
+				$this->_ReadingTime .= ' minute';
+				if($readingTime != 1){
+					$this->_ReadingTime .= 's';
+				}
+			}
+			else{
+				$readingTimeHours = floor($readingTime / 60);
+				$readingTimeMinutes = ceil($readingTime % 60);
+				$this->_ReadingTime = $readingTimeHours . ' hour';
+				if($readingTimeHours != 1){
+					$this->_ReadingTime .= 's';
+				}
+
+				if($readingTimeMinutes != 0){
+					$this->_ReadingTime .= ' ' . $readingTimeMinutes . ' minute';
+					if($readingTimeMinutes != 1){
+						$this->_ReadingTime .= 's';
+					}
+				}
+			}
+		}
+
+		return $this->_ReadingTime;
+	}
+
+	protected function GetAuthors(): array{
+		if($this->_Authors === null){
+			$this->_Authors = Db::Query('
+							SELECT *
+							from Contributors
+							where EbookId = ?
+								and MarcRole = ?
+						', [$this->EbookId, 'aut'], 'Contributor');
+		}
+
+		return $this->_Authors;
+	}
+
+	protected function GetAuthorsHtml(): string{
+		if($this->_AuthorsHtml === null){
+			$this->_AuthorsHtml = Ebook::GenerateContributorList($this->Authors, true);
+		}
+
+		return $this->_AuthorsHtml;
+	}
+
+	protected function GetAuthorsUrl(): string{
+		if($this->_AuthorsUrl === null){
+			$this->_AuthorsUrl = preg_replace('|url:https://standardebooks.org/ebooks/([^/]+)/.*|ius', '/ebooks/\1', $this->Identifier);
+		}
+
+		return $this->_AuthorsUrl;
+	}
+
+	protected function GetIllustrators(): array{
+		if($this->_Illustrators === null){
+			$this->_Illustrators = Db::Query('
+							SELECT *
+							from Contributors
+							where EbookId = ?
+								and MarcRole = ?
+						', [$this->EbookId, 'ill'], 'Contributor');
+		}
+
+		return $this->_Illustrators;
+	}
+
+	protected function GetTranslators(): array{
+		if($this->_Translators === null){
+			$this->_Translators = Db::Query('
+							SELECT *
+							from Contributors
+							where EbookId = ?
+								and MarcRole = ?
+						', [$this->EbookId, 'trl'], 'Contributor');
+		}
+
+		return $this->_Translators;
+	}
+
+	protected function GetContributors(): array{
+		if($this->_Contributors === null){
+			$this->_Contributors = Db::Query('
+							SELECT *
+							from Contributors
+							where EbookId = ?
+								and MarcRole = ?
+						', [$this->EbookId, 'ctb'], 'Contributor');
+		}
+
+		return $this->_Contributors;
+	}
+
+	protected function GetUrl(): string{
+		if($this->_Url === null){
+			$this->Url = str_replace(WEB_ROOT, '', $this->WwwFilesystemPath);
+		}
+
+		return $this->_Url;
+	}
+
+	protected function GetHasDownloads(): string{
+		if($this->_HasDownloads === null){
+			$this->_HasDownloads = $this->EpubUrl || $this->AdvancedEpubUrl || $this->KepubUrl || $this->Azw3Url;
+		}
+
+		return $this->_HasDownloads;
+	}
+
+	protected function GetUrlSafeIdentifier(): string{
+		if($this->_UrlSafeIdentifier === null){
+			$this->UrlSafeIdentifier = str_replace(['url:https://standardebooks.org/ebooks/', '/'], ['', '_'], $this->Identifier);
+		}
+
+		return $this->_UrlSafeIdentifier;
+	}
+
+	protected function GetHeroImageUrl(): string{
+		if($this->_HeroImageUrl === null){
+			$gitCommits = $this->GitCommits;
+//error_log(print_r('HeroImageUrl with $this->GitCommits: ', true));
+//error_log(print_r($this->GitCommits, true));
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			$this->HeroImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero.jpg';
+		}
+
+		return $this->_HeroImageUrl;
+	}
+
+	protected function GetContributorsHtml(): string{
+		if($this->_ContributorsHtml === null){
+			$this->_ContributorsHtml = '';
+			if(sizeof($this->Contributors) > 0){
+				$this->_ContributorsHtml .= ' with ' . Ebook::GenerateContributorList($this->Contributors, false) . ';';
+			}
+
+			if(sizeof($this->Translators) > 0){
+				$this->_ContributorsHtml .= ' translated by ' . Ebook::GenerateContributorList($this->Translators, false) . ';';
+			}
+
+			if(sizeof($this->Illustrators) > 0){
+				$this->_ContributorsHtml .= ' illustrated by ' . Ebook::GenerateContributorList($this->Illustrators, false) . ';';
+			}
+
+			if($this->_ContributorsHtml !== null){
+				$this->_ContributorsHtml = ucfirst(rtrim(trim($this->_ContributorsHtml), ';'));
+
+				if(substr(strip_tags($this->_ContributorsHtml), -1) != '.'){
+					$this->_ContributorsHtml .= '.';
+				}
+			}
+		}
+
+		return $this->_ContributorsHtml;
+	}
+
+	protected function GetTitleWithCreditsHtml(): string{
+		if($this->_TitleWithCreditsHtml === null){
+			$titleContributors = '';
+			if(sizeof($this->Contributors) > 0){
+				$titleContributors .= '. With ' . Ebook::GenerateContributorList($this->Contributors, false);
+			}
+
+			if(sizeof($this->Translators) > 0){
+				$titleContributors .= '. Translated by ' . Ebook::GenerateContributorList($this->Translators, false);
+			}
+
+			if(sizeof($this->Illustrators) > 0){
+				$titleContributors .= '. Illustrated by ' . Ebook::GenerateContributorList($this->Illustrators, false);
+			}
+
+			$this->_TitleWithCreditsHtml = Formatter::EscapeHtml($this->Title) . ', by ' . str_replace('&amp;', '&', $this->AuthorsHtml . $titleContributors);
+		}
+
+		return $this->_TitleWithCreditsHtml;
+	}
+
+	protected function GetTextUrl(): string{
+		if($this->_TextUrl === null){
+			$this->_TextUrl = $this->Url . '/text';
+		}
+
+		return $this->_TextUrl;
+	}
+
+	protected function GetTextSinglePageUrl(): string{
+		if($this->_TextSinglePageUrl === null){
+			$this->_TextSinglePageUrl = $this->Url . '/text/single-page';
+		}
+
+		return $this->_TextSinglePageUrl;
+	}
+
+	protected function GetTextSinglePageSizeNumber(): string{
+		if($this->_TextSinglePageSizeNumber === null){
+			$sizes = 'BKMGTP';
+			$factor = intval(floor((strlen((string)$this->TextSinglePageByteCount) - 1) / 3));
+			$this->_TextSinglePageSizeNumber = sprintf('%.1f', $this->TextSinglePageByteCount / pow(1024, $factor));
+		}
+
+		return $this->_TextSinglePageSizeNumber;
+	}
+
+	protected function GetTextSinglePageSizeUnit(): string{
+		if($this->_TextSinglePageSizeUnit === null){
+			$sizes = 'BKMGTP';
+			$factor = intval(floor((strlen((string)$this->TextSinglePageByteCount) - 1) / 3));
+			$this->_TextSinglePageSizeUnit = $sizes[$factor] ?? '';
+		}
+
+		return $this->_TextSinglePageSizeUnit;
+	}
 
 	protected function GetIndexableText(): string{
 		if($this->_IndexableText === null){
@@ -152,7 +430,6 @@ class Ebook extends Accessor{
 		}
 
 		$ebookFromFilesystem->WwwFilesystemPath = $wwwFilesystemPath;
-		$ebookFromFilesystem->Url = str_replace(WEB_ROOT, '', $ebookFromFilesystem->WwwFilesystemPath);
 
 		$rawMetadata = file_get_contents($wwwFilesystemPath . '/content.opf');
 
@@ -163,19 +440,10 @@ class Ebook extends Accessor{
 		}
 		$ebookFromFilesystem->Identifier = (string)$matches[1];
 
-		$ebookFromFilesystem->UrlSafeIdentifier = str_replace(['url:https://standardebooks.org/ebooks/', '/'], ['', '_'], $ebookFromFilesystem->Identifier);
-
-		$ebookFromFilesystem->TextUrl = $ebookFromFilesystem->Url . '/text';
-
 		try{
 			// PHP Safe throws an exception from filesize() if the file doesn't exist, but PHP still
 			// emits a warning. So, just silence the warning.
 			$ebookFromFilesystem->TextSinglePageByteCount = @filesize($ebookFromFilesystem->WwwFilesystemPath . '/text/single-page.xhtml');
-			$sizes = 'BKMGTP';
-			$factor = intval(floor((strlen((string)$ebookFromFilesystem->TextSinglePageByteCount) - 1) / 3));
-			$ebookFromFilesystem->TextSinglePageSizeNumber = sprintf('%.1f', $ebookFromFilesystem->TextSinglePageByteCount / pow(1024, $factor));
-			$ebookFromFilesystem->TextSinglePageSizeUnit = $sizes[$factor] ?? '';
-			$ebookFromFilesystem->TextSinglePageUrl = $ebookFromFilesystem->Url . '/text/single-page';
 		}
 		catch(Exception){
 			// Single page file doesn't exist, just pass
@@ -212,8 +480,6 @@ class Ebook extends Accessor{
 			$ebookFromFilesystem->Azw3Url = $ebookFromFilesystem->Url . '/downloads/' . basename($tempPath[0]);
 		}
 
-		$ebookFromFilesystem->HasDownloads = $ebookFromFilesystem->EpubUrl || $ebookFromFilesystem->AdvancedEpubUrl || $ebookFromFilesystem->KepubUrl || $ebookFromFilesystem->Azw3Url;
-
 		$tempPath = glob($ebookFromFilesystem->WwwFilesystemPath . '/downloads/cover.jpg');
 		if(sizeof($tempPath) > 0){
 			$ebookFromFilesystem->DistCoverUrl = $ebookFromFilesystem->Url . '/downloads/' . basename($tempPath[0]);
@@ -222,10 +488,12 @@ class Ebook extends Accessor{
 		// Fill in the short history of this repo.
 		$historyEntries = explode("\n",  shell_exec('cd ' . escapeshellarg($ebookFromFilesystem->RepoFilesystemPath) . ' && git log -n5 --pretty=format:"%ct %H %s"'));
 
+		$gitCommits = [];
 		foreach($historyEntries as $entry){
 			$array = explode(' ', $entry, 3);
-			$ebookFromFilesystem->GitCommits[] = new GitCommit($array[0], $array[1], $array[2]);
+			$gitCommits[] = GitCommit::FromLog($array[0], $array[1], $array[2]);
 		}
+		$ebookFromFilesystem->GitCommits = $gitCommits;
 
 		// Get cover image URLs.
 		$gitFolderPath = $ebookFromFilesystem->RepoFilesystemPath;
@@ -241,7 +509,6 @@ class Ebook extends Accessor{
 		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-cover@2x.avif')){
 			$ebookFromFilesystem->CoverImage2xAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-cover@2x.avif';
 		}
-		$ebookFromFilesystem->HeroImageUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-hero.jpg';
 		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-hero.avif')){
 			$ebookFromFilesystem->HeroImageAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-hero.avif';
 		}
@@ -316,6 +583,7 @@ class Ebook extends Accessor{
 		}
 
 		// Figure out authors and contributors
+		$authors = [];
 		foreach($xml->xpath('/package/metadata/dc:creator') ?: [] as $author){
 			$id = '';
 
@@ -332,22 +600,24 @@ class Ebook extends Accessor{
 				$fileAs = (string)$author;
 			}
 
-			$ebookFromFilesystem->Authors[] = new Contributor(
-								(string)$author,
-								$fileAs,
-								Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:name.person.full-name"][@refines="#' . $id . '"]')),
-								Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.encyclopedia.wikipedia"][@refines="#' . $id . '"]')),
-								'aut',
-								Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.authority.nacoaf"][@refines="#' . $id . '"]'))
-							);
+			$authors[] = Contributor::FromFile(
+						(string)$author,
+						$fileAs,
+						Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:name.person.full-name"][@refines="#' . $id . '"]')),
+						Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.encyclopedia.wikipedia"][@refines="#' . $id . '"]')),
+						'aut',
+						Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.authority.nacoaf"][@refines="#' . $id . '"]'))
+					);
 		}
+		$ebookFromFilesystem->Authors = $authors;
 
 		if(sizeof($ebookFromFilesystem->Authors) == 0){
 			throw new Exceptions\EbookParsingException('Invalid <dc:creator> element.');
 		}
 
-		$ebookFromFilesystem->AuthorsUrl = preg_replace('|url:https://standardebooks.org/ebooks/([^/]+)/.*|ius', '/ebooks/\1', $ebookFromFilesystem->Identifier);
-
+		$illustrators = [];
+		$translators = [];
+		$contributors = [];
 		foreach($xml->xpath('/package/metadata/dc:contributor') ?: [] as $contributor){
 			$id = '';
 			if($contributor->attributes() !== null){
@@ -355,7 +625,7 @@ class Ebook extends Accessor{
 			}
 
 			foreach($xml->xpath('/package/metadata/meta[ (@property="role" or @property="se:role") and @refines="#' . $id . '"]') ?: [] as $role){
-				$c = new Contributor(
+				$c = Contributor::FromFile(
 							(string)$contributor,
 							Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="file-as"][@refines="#' . $id . '"]')),
 							Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:name.person.full-name"][@refines="#' . $id . '"]')),
@@ -368,15 +638,15 @@ class Ebook extends Accessor{
 				$displaySequence = Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="display-seq"][@refines="#' . $id . '"]'));
 				if($displaySequence !== '0'){
 					if($role == 'trl'){
-						$ebookFromFilesystem->Translators[] = $c;
+						$translators[] = $c;
 					}
 
 					if($role == 'ill'){
-						$ebookFromFilesystem->Illustrators[] = $c;
+						$illustrators[] = $c;
 					}
 
 					if($role == 'ctb'){
-						$ebookFromFilesystem->Contributors[] = $c;
+						$contributors[] = $c;
 					}
 				}
 			}
@@ -392,6 +662,9 @@ class Ebook extends Accessor{
 			}
 
 		}
+		$ebookFromFilesystem->Illustrators = $illustrators;
+		$ebookFromFilesystem->Translators = $translators;
+		$ebookFromFilesystem->Contributors = $contributors;
 
 		// Some basic data.
 		$ebookFromFilesystem->Description = Ebook::NullIfEmpty($xml->xpath('/package/metadata/dc:description'));
@@ -411,64 +684,6 @@ class Ebook extends Accessor{
 			$readingEase = (float)$readingEaseElement[0];
 		}
 		$ebookFromFilesystem->ReadingEase = $readingEase;
-
-		if($ebookFromFilesystem->ReadingEase !== null){
-			if($ebookFromFilesystem->ReadingEase > 89){
-				$ebookFromFilesystem->ReadingEaseDescription = 'very easy';
-			}
-
-			if($ebookFromFilesystem->ReadingEase >= 79 && $ebookFromFilesystem->ReadingEase <= 89){
-				$ebookFromFilesystem->ReadingEaseDescription = 'easy';
-			}
-
-			if($ebookFromFilesystem->ReadingEase > 69 && $ebookFromFilesystem->ReadingEase <= 79){
-				$ebookFromFilesystem->ReadingEaseDescription = 'fairly easy';
-			}
-
-			if($ebookFromFilesystem->ReadingEase > 59 && $ebookFromFilesystem->ReadingEase <= 69){
-				$ebookFromFilesystem->ReadingEaseDescription = 'average difficulty';
-			}
-
-			if($ebookFromFilesystem->ReadingEase > 49 && $ebookFromFilesystem->ReadingEase <= 59){
-				$ebookFromFilesystem->ReadingEaseDescription = 'fairly difficult';
-			}
-
-			if($ebookFromFilesystem->ReadingEase > 39 && $ebookFromFilesystem->ReadingEase <= 49){
-				$ebookFromFilesystem->ReadingEaseDescription = 'difficult';
-			}
-
-			if($ebookFromFilesystem->ReadingEase <= 39){
-				$ebookFromFilesystem->ReadingEaseDescription = 'very difficult';
-			}
-		}
-
-		// Figure out the reading time.
-		$readingTime = ceil($ebookFromFilesystem->WordCount / AVERAGE_READING_WORDS_PER_MINUTE);
-		$ebookFromFilesystem->ReadingTime = (string)$readingTime;
-
-		if($readingTime < 60){
-			$ebookFromFilesystem->ReadingTime .= ' minute';
-			if($readingTime != 1){
-				$ebookFromFilesystem->ReadingTime .= 's';
-			}
-		}
-		else{
-			$readingTimeHours = floor($readingTime / 60);
-			$readingTimeMinutes = ceil($readingTime % 60);
-			$ebookFromFilesystem->ReadingTime = $readingTimeHours . ' hour';
-			if($readingTimeHours != 1){
-				$ebookFromFilesystem->ReadingTime .= 's';
-			}
-
-			if($readingTimeMinutes != 0){
-				$ebookFromFilesystem->ReadingTime .= ' ' . $readingTimeMinutes . ' minute';
-				if($readingTimeMinutes != 1){
-					$ebookFromFilesystem->ReadingTime .= 's';
-				}
-			}
-		}
-
-		// Figure out ancillary links.
 
 		// First the Wikipedia URLs.
 		$ebookFromFilesystem->WikipediaUrl = Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.encyclopedia.wikipedia"][not(@refines)]'));
@@ -508,36 +723,6 @@ class Ebook extends Accessor{
 
 		// Next the GitHub URLs.
 		$ebookFromFilesystem->GitHubUrl = Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.vcs.github"][not(@refines)]'));
-
-		// Put together the full contributor string.
-		$titleContributors = '';
-		if(sizeof($ebookFromFilesystem->Contributors) > 0){
-			$titleContributors .= '. With ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Contributors, false);
-			$ebookFromFilesystem->ContributorsHtml .= ' with ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Contributors, false) . ';';
-		}
-
-		if(sizeof($ebookFromFilesystem->Translators) > 0){
-			$titleContributors .= '. Translated by ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Translators, false);
-			$ebookFromFilesystem->ContributorsHtml .= ' translated by ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Translators, false) . ';';
-		}
-
-		if(sizeof($ebookFromFilesystem->Illustrators) > 0){
-			$titleContributors .= '. Illustrated by ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Illustrators, false);
-			$ebookFromFilesystem->ContributorsHtml .= ' illustrated by ' . $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Illustrators, false) . ';';
-		}
-
-		if($ebookFromFilesystem->ContributorsHtml !== null){
-			$ebookFromFilesystem->ContributorsHtml = ucfirst(rtrim(trim($ebookFromFilesystem->ContributorsHtml), ';'));
-
-			if(substr(strip_tags($ebookFromFilesystem->ContributorsHtml), -1) != '.'){
-				$ebookFromFilesystem->ContributorsHtml .= '.';
-			}
-		}
-
-		$ebookFromFilesystem->AuthorsHtml = $ebookFromFilesystem->GenerateContributorList($ebookFromFilesystem->Authors, true);
-
-		// Now the complete title with credits.
-		$ebookFromFilesystem->TitleWithCreditsHtml = Formatter::EscapeHtml($ebookFromFilesystem->Title) . ', by ' . str_replace('&amp;', '&', $ebookFromFilesystem->AuthorsHtml . $titleContributors);
 
 		return $ebookFromFilesystem;
 	}
@@ -890,7 +1075,7 @@ class Ebook extends Accessor{
 	 * @param array<Contributor> $contributors
 	 * @param bool $includeRdfa
 	 */
-	private function GenerateContributorList(array $contributors, bool $includeRdfa): string{
+	private static function GenerateContributorList(array $contributors, bool $includeRdfa): string{
 		$string = '';
 		$i = 0;
 
