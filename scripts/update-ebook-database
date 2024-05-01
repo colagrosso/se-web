@@ -83,7 +83,7 @@ $ebookFromFilesystem = Ebook::FromFilesystem($ebookWwwFilesystemPath);
 if($verbose){
 	print("Title: $ebookFromFilesystem->Title\n");
 	print("Identifier: $ebookFromFilesystem->Identifier\n");
-	print("HeroImageUrl: $ebookFromFilesystem->HeroImageUrl\n");
+	print("TocEntries: " . print_r($ebookFromFilesystem->TocEntries, true));
 }
 
 $ebookFromFilesystem->CreateOrUpdate();
@@ -93,7 +93,7 @@ $ebookFromDatabase = Ebook::GetByIdentifier($ebookFromFilesystem->Identifier);
 if($verbose){
 	print("DB Title: $ebookFromDatabase->Title\n");
 	print("DB Identifier: $ebookFromDatabase->Identifier\n");
-	print("DB HeroImageUrl: $ebookFromDatabase->HeroImageUrl\n");
+	print("DB TocEntries: " . print_r($ebookFromDatabase->TocEntries, true));
 }
 
 print_r(findObjectDifferences($ebookFromFilesystem, $ebookFromDatabase));
