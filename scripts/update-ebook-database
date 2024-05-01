@@ -19,6 +19,8 @@ function findObjectDifferences($fs, $db) {
 		$fsProperty->setAccessible(true);
 		$dbProperty->setAccessible(true);
 
+		print("\n" . $fsProperty->getName() . "\n");
+
 		try{
 			if($fsProperty->getName()[0] === '_') {
 				// Property starts with underscore, remove it and call __get()
@@ -27,32 +29,46 @@ function findObjectDifferences($fs, $db) {
 				if(is_array($fsProperty->getValue($fs))){
 					$arrayDiff = array_diff($fsProperty->getValue($fs), $dbProperty->getValue($db));
 					if (!empty($arrayDiff)) {
-						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' . "\n");
 						print("Diff found in array property: " . $fsProperty->getName());
-						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' . "\n");
 						$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
+					}
+					else{
+						print('________________________________________________' . "\n");
+						print_r('NO DIFF on array: ' . $fsProperty);
+						print('________________________________________________' . "\n");
 					}
 				}
 				else if ($fs->$propertyNameWithoutUnderscore !== $db->$propertyNameWithoutUnderscore) {
-					print('++++++++++++++++++++++++++++++++++++++++++++++++');
+					print('++++++++++++++++++++++++++++++++++++++++++++++++' . "\n");
 					print("Diff found on property: " . $fsProperty);
-					print('++++++++++++++++++++++++++++++++++++++++++++++++');
+					print('++++++++++++++++++++++++++++++++++++++++++++++++' . "\n");
 					$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
 				}
-
+				else{
+					print('________________________________________________' . "\n");
+					print_r('NO DIFF on :' . $fsProperty);
+					print('________________________________________________' . "\n");
+				}
 			}
 			else if($fsProperty->getValue($fs) !== $dbProperty->getValue($db)) {
-				print('================================================');
+				print('================================================' . "\n");
 				print_r('Diff on :' . $fsProperty);
-				print('================================================');
+				print('================================================' . "\n");
 				$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
+			}
+			else{
+				print('________________________________________________' . "\n");
+				print_r('NO DIFF on :' . $fsProperty);
+				print('________________________________________________' . "\n");
 			}
 		}
 		catch(Error $e){
-			print('------------------------------------------------');
+			print('------------------------------------------------' . "\n");
 			print_r('Missing property: ' . $fsProperty);
 			print_r('Error: ' . $e);
-			print('------------------------------------------------');
+			print('------------------------------------------------' . "\n");
 		}
 	}
 
@@ -84,6 +100,8 @@ if($verbose){
 	print("Title: $ebookFromFilesystem->Title\n");
 	print("Identifier: $ebookFromFilesystem->Identifier\n");
 	print("TocEntries: " . print_r($ebookFromFilesystem->TocEntries, true));
+	print("Collections: " . print_r($ebookFromFilesystem->Collections, true));
+	print("Sources: " . print_r($ebookFromFilesystem->Sources, true));
 }
 
 $ebookFromFilesystem->CreateOrUpdate();
@@ -94,6 +112,8 @@ if($verbose){
 	print("DB Title: $ebookFromDatabase->Title\n");
 	print("DB Identifier: $ebookFromDatabase->Identifier\n");
 	print("DB TocEntries: " . print_r($ebookFromDatabase->TocEntries, true));
+	print("DB Collections: " . print_r($ebookFromDatabase->Collections, true));
+	print("DB Sources: " . print_r($ebookFromDatabase->Sources, true));
 }
 
 print_r(findObjectDifferences($ebookFromFilesystem, $ebookFromDatabase));
