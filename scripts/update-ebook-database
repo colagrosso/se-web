@@ -4,6 +4,61 @@ require_once('/standardebooks.org/web/lib/Core.php');
 
 use function Safe\getopt;
 
+function findObjectDifferences($fs, $db) {
+	$diffs = [];
+	$fsReflection = new ReflectionClass($fs);
+	$dbReflection = new ReflectionClass($db);
+
+	$fsProperties = $fsReflection->getProperties();
+	$dbProperties = $dbReflection->getProperties();
+
+	foreach ($fsProperties as $fsProperty) {
+		$dbProperty = $dbReflection->getProperty($fsProperty->getName());
+
+		// Make properties accessible for comparison
+		$fsProperty->setAccessible(true);
+		$dbProperty->setAccessible(true);
+
+		try{
+			if($fsProperty->getName()[0] === '_') {
+				// Property starts with underscore, remove it and call __get()
+				$propertyNameWithoutUnderscore = substr($fsProperty->getName(), 1);
+				//if($fsProperty->getType() === ReflectionProperty::TYPE_ARRAY){
+				if(is_array($fsProperty->getValue($fs))){
+					$arrayDiff = array_diff($fsProperty->getValue($fs), $dbProperty->getValue($db));
+					if (!empty($arrayDiff)) {
+						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+						print("Diff found in array property: " . $fsProperty->getName());
+						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+						$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
+					}
+				}
+				else if ($fs->$propertyNameWithoutUnderscore !== $db->$propertyNameWithoutUnderscore) {
+					print('++++++++++++++++++++++++++++++++++++++++++++++++');
+					print("Diff found on property: " . $fsProperty);
+					print('++++++++++++++++++++++++++++++++++++++++++++++++');
+					$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
+				}
+
+			}
+			else if($fsProperty->getValue($fs) !== $dbProperty->getValue($db)) {
+				print('================================================');
+				print_r('Diff on :' . $fsProperty);
+				print('================================================');
+				$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
+			}
+		}
+		catch(Error $e){
+			print('------------------------------------------------');
+			print_r('Missing property: ' . $fsProperty);
+			print_r('Error: ' . $e);
+			print('------------------------------------------------');
+		}
+	}
+
+	return $diffs;
+}
+
 $longopts = ['ebookWwwFilesystemPath:', 'verbose'];
 $options = getopt('v', $longopts);
 
@@ -23,11 +78,25 @@ if($verbose){
 	print("ebookWwwFilesystemPath: $ebookWwwFilesystemPath\n");
 }
 
-$ebook = Ebook::FromFilesystem($ebookWwwFilesystemPath);
+$ebookFromFilesystem = Ebook::FromFilesystem($ebookWwwFilesystemPath);
 
 if($verbose){
-	print("Title: $ebook->Title\n");
-	print("Identifier: $ebook->Identifier\n");
+	print("Title: $ebookFromFilesystem->Title\n");
+	print("Identifier: $ebookFromFilesystem->Identifier\n");
+	print("HeroImageUrl: $ebookFromFilesystem->HeroImageUrl\n");
 }
 
-$ebook->CreateOrUpdate();
+$ebookFromFilesystem->CreateOrUpdate();
+
+$ebookFromDatabase = Ebook::GetByIdentifier($ebookFromFilesystem->Identifier);
+
+if($verbose){
+	print("DB Title: $ebookFromDatabase->Title\n");
+	print("DB Identifier: $ebookFromDatabase->Identifier\n");
+	print("DB HeroImageUrl: $ebookFromDatabase->HeroImageUrl\n");
+}
+
+print_r(findObjectDifferences($ebookFromFilesystem, $ebookFromDatabase));
+
+// Check if array is empty. Print it and exit 1 if not.
+// If verbose, print that the objects match
