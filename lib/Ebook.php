@@ -69,7 +69,6 @@ class Ebook extends Accessor{
 	public DateTimeImmutable $Created;
 	public DateTimeImmutable $Updated;
 	public ?int $TextSinglePageByteCount = null;
-	public $TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
 	protected $_GitCommits = null;
 	protected ?string $_Url = null;
 	protected ?bool $_HasDownloads = null;
@@ -89,6 +88,7 @@ class Ebook extends Accessor{
 	protected ?string $_TextSinglePageUrl = null;
 	protected ?string $_TextSinglePageSizeNumber = null;
 	protected ?string $_TextSinglePageSizeUnit = null;
+	protected $_TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
 	protected ?string $_IndexableText = null;
 
 	// *******
@@ -361,6 +361,24 @@ class Ebook extends Accessor{
 		return $this->_TextSinglePageSizeUnit;
 	}
 
+	protected function GetTocEntries(): array{
+		if($this->_TocEntries === null){
+			$this->_TocEntries = [];
+
+			$result = Db::Query('
+					SELECT *
+					from TocEntries
+					where EbookId = ?
+				', [$this->EbookId], 'stdClass');
+
+			foreach($result as $row){
+				$this->_TocEntries[] = $row->TocEntry;
+			}
+		}
+
+		return $this->_TocEntries;
+	}
+
 	protected function GetIndexableText(): string{
 		if($this->_IndexableText === null){
 			$this->_IndexableText = $this->FullTitle ?? $this->Title;
@@ -553,12 +571,13 @@ class Ebook extends Accessor{
 
 		// Fill the ToC if necessary
 		if($includeToc){
-			$ebookFromFilesystem->TocEntries = [];
+			$tocEntries = [];
 			$tocDom = new SimpleXMLElement(str_replace('xmlns=', 'ns=', file_get_contents($wwwFilesystemPath . '/toc.xhtml')));
 			$tocDom->registerXPathNamespace('epub', 'http://www.idpf.org/2007/ops');
 			foreach($tocDom->xpath('/html/body//nav[@epub:type="toc"]//a[not(contains(@epub:type, "z3998:roman")) and not(text() = "Titlepage" or text() = "Imprint" or text() = "Colophon" or text() = "Endnotes" or text() = "Uncopyright") and not(contains(@href, "halftitle"))]') ?: [] as $item){
-				$ebookFromFilesystem->TocEntries[] = (string)$item;
+				$tocEntries[] = (string)$item;
 			}
+			$ebookFromFilesystem->TocEntries = $tocEntries; 
 		}
 
 		// Get SE collections
