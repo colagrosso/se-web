@@ -45,7 +45,6 @@ class Ebook extends Accessor{
 	public string $Azw3Url;
 	public $Tags = [];
 	public $LocSubjects = [];
-	public $Collections = [];
 	public string $Identifier;
 	public string $HeroImageAvifUrl;
 	public string $HeroImage2xUrl;
@@ -65,17 +64,18 @@ class Ebook extends Accessor{
 	public float $ReadingEase;
 	public ?string $GitHubUrl = null;
 	public ?string $WikipediaUrl = null;
-	public $Sources = [];
 	public DateTimeImmutable $Created;
 	public DateTimeImmutable $Updated;
 	public ?int $TextSinglePageByteCount = null;
 	protected $_GitCommits = null;
+	protected $_Collections = null;
 	protected ?string $_Url = null;
 	protected ?bool $_HasDownloads = null;
 	protected ?string $_UrlSafeIdentifier = null;
 	protected ?string $_HeroImageUrl = null;
 	protected ?string $_ReadingEaseDescription = null;
 	protected ?string $_ReadingTime = null;
+	protected $_Sources = null;
 	protected $_Authors = null;
 	protected ?string $_AuthorsHtml = null;
 	protected ?string $_AuthorsUrl = null; // This is a single URL even if there are multiple authors; for example, /ebooks/karl-marx_friedrich-engels/
@@ -106,6 +106,18 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_GitCommits;
+	}
+
+	protected function GetCollections(): array{
+		if($this->_Collections === null){
+			$this->_Collections = Db::Query('
+							SELECT *
+							from Collections
+							where EbookId = ?
+						', [$this->EbookId], 'Collection');
+		}
+
+		return $this->_Collections;
 	}
 
 	protected function GetReadingEaseDescription(): string{
@@ -173,14 +185,26 @@ class Ebook extends Accessor{
 		return $this->_ReadingTime;
 	}
 
+	protected function GetSources(): array{
+		if($this->_Sources === null){
+			$this->_Sources = Db::Query('
+						SELECT *
+						from EbookSources
+						where EbookId = ?
+					', [$this->EbookId], 'EbookSource');
+		}
+
+		return $this->_Sources;
+	}
+
 	protected function GetAuthors(): array{
 		if($this->_Authors === null){
 			$this->_Authors = Db::Query('
-							SELECT *
-							from Contributors
-							where EbookId = ?
-								and MarcRole = ?
-						', [$this->EbookId, 'aut'], 'Contributor');
+						SELECT *
+						from Contributors
+						where EbookId = ?
+							and MarcRole = ?
+					', [$this->EbookId, 'aut'], 'Contributor');
 		}
 
 		return $this->_Authors;
@@ -581,8 +605,9 @@ class Ebook extends Accessor{
 		}
 
 		// Get SE collections
+		$collections = [];
 		foreach($xml->xpath('/package/metadata/meta[@property="belongs-to-collection"]') ?: [] as $collection){
-			$c = new Collection($collection);
+			$c = Collection::FromFile($collection);
 			$id = $collection->attributes()->id ?? '';
 
 			foreach($xml->xpath('/package/metadata/meta[@refines="#' . $id . '"][@property="group-position"]') ?: [] as $s){
@@ -591,8 +616,9 @@ class Ebook extends Accessor{
 			foreach($xml->xpath('/package/metadata/meta[@refines="#' . $id . '"][@property="collection-type"]') ?: [] as $s){
 				$c->Type = (string)$s;
 			}
-			$ebookFromFilesystem->Collections[] = $c;
+			$collections[] = $c;
 		}
+		$ebookFromFilesystem->Collections = $collections;
 
 		// Get LoC tags
 		foreach($xml->xpath('/package/metadata/dc:subject') ?: [] as $subject){
@@ -708,37 +734,39 @@ class Ebook extends Accessor{
 		$ebookFromFilesystem->WikipediaUrl = Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.encyclopedia.wikipedia"][not(@refines)]'));
 
 		// Next the page scan source URLs.
+		$sources = [];
 		foreach($xml->xpath('/package/metadata/dc:source') ?: [] as $element){
 			$e = (string)$element;
 			if(mb_stripos($e, 'gutenberg.org/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::ProjectGutenberg, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::ProjectGutenberg, $e);
 			}
 			elseif(mb_stripos($e, 'gutenberg.net.au/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::ProjectGutenbergAustralia, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::ProjectGutenbergAustralia, $e);
 			}
 			elseif(mb_stripos($e, 'gutenberg.ca/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::ProjectGutenbergCanada, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::ProjectGutenbergCanada, $e);
 			}
 			elseif(mb_stripos($e, 'archive.org/details') !== false){
 				// `/details` excludes Wayback Machine URLs which may sometimes occur, for example in Lyrical Ballads
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::InternetArchive, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::InternetArchive, $e);
 			}
 			elseif(mb_stripos($e, 'hathitrust.org/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::HathiTrust, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::HathiTrust, $e);
 			}
 			elseif(mb_stripos($e, 'wikisource.org/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::Wikisource, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::Wikisource, $e);
 			}
 			elseif(mb_stripos($e, 'books.google.com/') !== false || mb_stripos($e, 'google.com/books/') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::GoogleBooks, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::GoogleBooks, $e);
 			}
 			elseif(mb_stripos($e, 'www.fadedpage.com') !== false){
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::FadedPage, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::FadedPage, $e);
 			}
 			else{
-				$ebookFromFilesystem->Sources[] = new EbookSource(EbookSourceType::Other, $e);
+				$sources[] = EbookSource::FromFile(EbookSourceType::Other, $e);
 			}
 		}
+		$ebookFromFilesystem->Sources = $sources;
 
 		// Next the GitHub URLs.
 		$ebookFromFilesystem->GitHubUrl = Ebook::NullIfEmpty($xml->xpath('/package/metadata/meta[@property="se:url.vcs.github"][not(@refines)]'));

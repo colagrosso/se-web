@@ -8,10 +8,12 @@ class Collection{
 	public ?int $SequenceNumber = null;
 	public ?string $Type = null;
 
-	public function __construct(string $name){
-		$this->Name = $name;
-		$this->UrlName = Formatter::MakeUrlSafe($this->Name);
-		$this->Url = '/collections/' . $this->UrlName;
+	public static function FromFile(string $name){
+		$instance = new Collection();
+		$instance->Name = $name;
+		$instance->UrlName = Formatter::MakeUrlSafe($instance->Name);
+		$instance->Url = '/collections/' . $instance->UrlName;
+		return $instance;
 	}
 
 	public function GetSortedName(): string{
