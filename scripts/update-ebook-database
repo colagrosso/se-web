@@ -27,6 +27,12 @@ function findObjectDifferences($fs, $db) {
 				$propertyNameWithoutUnderscore = substr($fsProperty->getName(), 1);
 				//if($fsProperty->getType() === ReflectionProperty::TYPE_ARRAY){
 				if(is_array($fsProperty->getValue($fs))){
+					print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' . "\n");
+					print("fs:\n");
+					print_r($fsProperty->getValue($fs));
+					print_r("db:\n");
+					print_r($dbProperty->getValue($db));
+					print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' . "\n");
 					$arrayDiff = array_diff($fsProperty->getValue($fs), $dbProperty->getValue($db));
 					if (!empty($arrayDiff)) {
 						print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' . "\n");
@@ -35,9 +41,7 @@ function findObjectDifferences($fs, $db) {
 						$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
 					}
 					else{
-						print('________________________________________________' . "\n");
 						print_r('NO DIFF on array: ' . $fsProperty);
-						print('________________________________________________' . "\n");
 					}
 				}
 				else if ($fs->$propertyNameWithoutUnderscore !== $db->$propertyNameWithoutUnderscore) {
@@ -47,9 +51,7 @@ function findObjectDifferences($fs, $db) {
 					$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
 				}
 				else{
-					print('________________________________________________' . "\n");
 					print_r('NO DIFF on :' . $fsProperty);
-					print('________________________________________________' . "\n");
 				}
 			}
 			else if($fsProperty->getValue($fs) != $dbProperty->getValue($db)) {
@@ -59,9 +61,7 @@ function findObjectDifferences($fs, $db) {
 				$diffs[$fsProperty->getName()] = ["fs" => $fsProperty->getValue($fs), "db" => $dbProperty->getValue($db)];
 			}
 			else{
-				print('________________________________________________' . "\n");
 				print_r('NO DIFF on :' . $fsProperty);
-				print('________________________________________________' . "\n");
 			}
 		}
 		catch(Error $e){
@@ -99,9 +99,6 @@ $ebookFromFilesystem = Ebook::FromFilesystem($ebookWwwFilesystemPath);
 if($verbose){
 	print("Title: $ebookFromFilesystem->Title\n");
 	print("Identifier: $ebookFromFilesystem->Identifier\n");
-	print("TocEntries: " . print_r($ebookFromFilesystem->TocEntries, true));
-	print("Collections: " . print_r($ebookFromFilesystem->Collections, true));
-	print("Sources: " . print_r($ebookFromFilesystem->Sources, true));
 }
 
 $ebookFromFilesystem->CreateOrUpdate();
@@ -111,9 +108,6 @@ $ebookFromDatabase = Ebook::GetByIdentifier($ebookFromFilesystem->Identifier);
 if($verbose){
 	print("DB Title: $ebookFromDatabase->Title\n");
 	print("DB Identifier: $ebookFromDatabase->Identifier\n");
-	print("DB TocEntries: " . print_r($ebookFromDatabase->TocEntries, true));
-	print("DB Collections: " . print_r($ebookFromDatabase->Collections, true));
-	print("DB Sources: " . print_r($ebookFromDatabase->Sources, true));
 }
 
 print_r(findObjectDifferences($ebookFromFilesystem, $ebookFromDatabase));
