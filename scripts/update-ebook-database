@@ -52,7 +52,7 @@ function findObjectDifferences($fs, $db) {
 					print('________________________________________________' . "\n");
 				}
 			}
-			else if($fsProperty->getValue($fs) !== $dbProperty->getValue($db)) {
+			else if($fsProperty->getValue($fs) != $dbProperty->getValue($db)) {
 				print('================================================' . "\n");
 				print_r('Diff on :' . $fsProperty);
 				print('================================================' . "\n");
