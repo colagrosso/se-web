@@ -64,8 +64,8 @@ class Ebook extends Accessor{
 	public float $ReadingEase;
 	public ?string $GitHubUrl = null;
 	public ?string $WikipediaUrl = null;
-	public DateTimeImmutable $Created;
-	public DateTimeImmutable $Updated;
+	public DateTimeImmutable $EbookCreated;
+	public DateTimeImmutable $EbookUpdated;
 	public ?int $TextSinglePageByteCount = null;
 	protected $_GitCommits = null;
 	protected $_Collections = null;
@@ -576,12 +576,12 @@ class Ebook extends Accessor{
 
 		$date = $xml->xpath('/package/metadata/dc:date') ?: [];
 		if($date !== false && sizeof($date) > 0){
-			$ebookFromFilesystem->Created = new DateTimeImmutable((string)$date[0]);
+			$ebookFromFilesystem->EbookCreated = new DateTimeImmutable((string)$date[0]);
 		}
 
 		$modifiedDate = $xml->xpath('/package/metadata/meta[@property="dcterms:modified"]') ?: [];
 		if($modifiedDate !== false && sizeof($modifiedDate) > 0){
-			$ebookFromFilesystem->Updated = new DateTimeImmutable((string)$modifiedDate[0]);
+			$ebookFromFilesystem->EbookUpdated = new DateTimeImmutable((string)$modifiedDate[0]);
 		}
 
 		// Get SE tags
@@ -916,12 +916,12 @@ class Ebook extends Accessor{
 			$error->Add(new Exceptions\StringTooLongException('Ebook WikipediaUrl'));
 		}
 
-		if($this->Created > $now || $this->Created < EBOOK_EARLIEST_CREATION_DATE){
-			$error->Add(new Exceptions\InvalidEbookCreatedDatetimeException($this->Created));
+		if($this->EbookCreated > $now || $this->EbookCreated < EBOOK_EARLIEST_CREATION_DATE){
+			$error->Add(new Exceptions\InvalidEbookCreatedDatetimeException($this->EbookCreated));
 		}
 
-		if($this->Updated > $now || $this->Updated < EBOOK_EARLIEST_CREATION_DATE){
-			$error->Add(new Exceptions\InvalidEbookUpdatedDatetimeException($this->Updated));
+		if($this->EbookUpdated > $now || $this->EbookUpdated < EBOOK_EARLIEST_CREATION_DATE){
+			$error->Add(new Exceptions\InvalidEbookUpdatedDatetimeException($this->EbookUpdated));
 
 		}
 
@@ -1326,7 +1326,7 @@ class Ebook extends Accessor{
 				$this->AdvancedEpubUrl, $this->KepubUrl, $this->Azw3Url, $this->DistCoverUrl, $this->Title,
 				$this->FullTitle, $this->AlternateTitle, $this->Description, $this->LongDescription,
 				$this->Language, $this->WordCount, $this->ReadingEase, $this->GitHubUrl, $this->WikipediaUrl,
-				$this->Created, $this->Updated, $this->TextSinglePageByteCount, $this->IndexableText]);
+				$this->EbookCreated, $this->EbookUpdated, $this->TextSinglePageByteCount, $this->IndexableText]);
 
 		$this->EbookId = Db::GetLastInsertedId();
 
@@ -1377,7 +1377,7 @@ class Ebook extends Accessor{
 				$this->AdvancedEpubUrl, $this->KepubUrl, $this->Azw3Url, $this->DistCoverUrl, $this->Title,
 				$this->FullTitle, $this->AlternateTitle, $this->Description, $this->LongDescription,
 				$this->Language, $this->WordCount, $this->ReadingEase, $this->GitHubUrl, $this->WikipediaUrl,
-				$this->Created, $this->Updated, $this->TextSinglePageByteCount, $this->IndexableText,
+				$this->EbookCreated, $this->EbookUpdated, $this->TextSinglePageByteCount, $this->IndexableText,
 				$this->EbookId]);
 
 		$this->DeleteTags();
