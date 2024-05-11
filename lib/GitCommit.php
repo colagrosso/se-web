@@ -11,7 +11,7 @@ class GitCommit{
 		$instance = new GitCommit();
 		//$instance->Created = new DateTimeImmutable('@' . $unixTimestamp, new DateTimeZone('UTC'));
 		$instance->Created = new DateTimeImmutable('@' . $unixTimestamp);
-		$instance->Created = $instance->Created->setTimeZone(new DateTimeZone('UTC'));
+		//$instance->Created = $instance->Created->setTimeZone(new DateTimeZone('UTC'));
 		$instance->Message = $message;
 		$instance->Hash = $hash;
 		return $instance;
