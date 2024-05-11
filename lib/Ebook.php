@@ -11,7 +11,7 @@ use function Safe\shell_exec;
 
 /**
  * @property array<GitCommit> $GitCommits
- * @property array<EbookTag> $EbookTags
+ * @property array<EbookTag> $Tags
  * @property array<LocSubject> $LocSubjects
  * @property array<Collection> $Collections
  * @property array<EbookSource> $Sources
@@ -43,8 +43,6 @@ class Ebook extends Accessor{
 	public string $AdvancedEpubUrl;
 	public string $KepubUrl;
 	public string $Azw3Url;
-	public $Tags = [];
-	public $LocSubjects = [];
 	public string $Identifier;
 	public string $HeroImageAvifUrl;
 	public string $HeroImage2xUrl;
@@ -67,6 +65,8 @@ class Ebook extends Accessor{
 	public DateTimeImmutable $EbookCreated;
 	public DateTimeImmutable $EbookUpdated;
 	public ?int $TextSinglePageByteCount = null;
+	protected $_Tags = null;
+	protected $_LocSubjects = null;
 	protected $_GitCommits = null;
 	protected $_Collections = null;
 	protected ?string $_Url = null;
@@ -94,6 +94,32 @@ class Ebook extends Accessor{
 	// *******
 	// GETTERS
 	// *******
+
+	protected function GetTags(): array{
+		if($this->_Tags === null){
+			$this->_Tags = Db::Query('
+						SELECT t.*
+						from Tags t
+						inner join EbookTags et using (TagId)
+						where EbookId = ?
+					', [$this->EbookId], 'EbookTag');
+		}
+
+		return $this->_Tags;
+	}
+
+	protected function GetLocSubjects(): array{
+		if($this->_LocSubjects === null){
+			$this->_LocSubjects = Db::Query('
+							SELECT l.*
+							from LocSubjects l
+							inner join EbookLocSubjects el using (LocSubjectId)
+							where EbookId = ?
+					', [$this->EbookId], 'LocSubject');
+		}
+
+		return $this->_LocSubjects;
+	}
 
 	protected function GetGitCommits(): array{
 		if($this->_GitCommits === null){
@@ -585,11 +611,13 @@ class Ebook extends Accessor{
 		}
 
 		// Get SE tags
+		$tags = [];
 		foreach($xml->xpath('/package/metadata/meta[@property="se:subject"]') ?: [] as $tag){
 			$ebookTag = new EbookTag();
 			$ebookTag->Name = $tag;
-			$ebookFromFilesystem->Tags[] = $ebookTag;
+			$tags[] = $ebookTag;
 		}
+		$ebookFromFilesystem->Tags = $tags;
 
 		$includeToc = sizeof($xml->xpath('/package/metadata/meta[@property="se:is-a-collection"]') ?: []) > 0;
 
@@ -621,11 +649,13 @@ class Ebook extends Accessor{
 		$ebookFromFilesystem->Collections = $collections;
 
 		// Get LoC tags
+		$locSubjects = [];
 		foreach($xml->xpath('/package/metadata/dc:subject') ?: [] as $subject){
 			$locSubject = new LocSubject();
 			$locSubject->Name = $subject;
-			$ebookFromFilesystem->LocSubjects[] = $locSubject;
+			$locSubjects[] = $locSubject;
 		}
+		$ebookFromFilesystem->LocSubjects = $locSubjects;
 
 		// Figure out authors and contributors
 		$authors = [];
