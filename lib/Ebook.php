@@ -26,6 +26,13 @@ use function Safe\shell_exec;
  * @property bool $HasDownloads
  * @property string $UrlSafeIdentifier
  * @property string $HeroImageUrl
+ * @property string $HeroImageAvifUrl
+ * @property string $HeroImage2xUrl
+ * @property string $HeroImage2xAvifUrl
+ * @property string $CoverImageUrl
+ * @property string $CoverImageAvifUrl
+ * @property string $CoverImage2xUrl
+ * @property string $CoverImage2xAvifUrl
  * @property string $ContributorsHtml
  * @property string $TitleWithCreditsHtml
  * @property string $TextUrl
@@ -44,13 +51,6 @@ class Ebook extends Accessor{
 	public string $KepubUrl;
 	public string $Azw3Url;
 	public string $Identifier;
-	public string $HeroImageAvifUrl;
-	public string $HeroImage2xUrl;
-	public string $HeroImage2xAvifUrl;
-	public string $CoverImageUrl;
-	public string $CoverImageAvifUrl;
-	public string $CoverImage2xUrl;
-	public string $CoverImage2xAvifUrl;
 	public string $DistCoverUrl;
 	public ?string $Title = null;
 	public ?string $FullTitle = null;
@@ -73,6 +73,13 @@ class Ebook extends Accessor{
 	protected ?bool $_HasDownloads = null;
 	protected ?string $_UrlSafeIdentifier = null;
 	protected ?string $_HeroImageUrl = null;
+	protected ?string $_HeroImageAvifUrl = null;
+	protected ?string $_HeroImage2xUrl = null;
+	protected ?string $_HeroImage2xAvifUrl = null;
+	protected ?string $_CoverImageUrl = null;
+	protected ?string $_CoverImageAvifUrl = null;
+	protected ?string $_CoverImage2xUrl = null;
+	protected ?string $_CoverImage2xAvifUrl = null;
 	protected ?string $_ReadingEaseDescription = null;
 	protected ?string $_ReadingTime = null;
 	protected $_Sources = null;
@@ -94,6 +101,19 @@ class Ebook extends Accessor{
 	// *******
 	// GETTERS
 	// *******
+
+	protected function GetGitCommits(): array{
+		if($this->_GitCommits === null){
+			$this->_GitCommits = Db::Query('
+							SELECT *
+							from GitCommits
+							where EbookId = ?
+							order by Created desc
+						', [$this->EbookId], 'GitCommit');
+		}
+
+		return $this->_GitCommits;
+	}
 
 	protected function GetTags(): array{
 		if($this->_Tags === null){
@@ -119,19 +139,6 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_LocSubjects;
-	}
-
-	protected function GetGitCommits(): array{
-		if($this->_GitCommits === null){
-			$this->_GitCommits = Db::Query('
-							SELECT *
-							from GitCommits
-							where EbookId = ?
-							order by Created desc
-						', [$this->EbookId], 'GitCommit');
-		}
-
-		return $this->_GitCommits;
 	}
 
 	protected function GetCollections(): array{
@@ -325,6 +332,84 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_HeroImageUrl;
+	}
+
+	protected function GetHeroImageAvifUrl(): string{
+		if($this->_HeroImageAvifUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero.avif')){
+				$this->_HeroImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero.avif';
+			}
+		}
+
+		return $this->_HeroImageAvifUrl;
+	}
+
+	protected function GetHeroImage2xUrl(): string{
+		if($this->_HeroImage2xUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			$this->_HeroImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero@2x.jpg';
+		}
+
+		return $this->_HeroImage2xUrl;
+	}
+
+	protected function GetHeroImage2xAvifUrl(): string{
+		if($this->_HeroImage2xAvifUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero@2x.avif')){
+				$this->_HeroImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero@2x.avif';
+			}
+		}
+
+		return $this->_HeroImage2xAvifUrl;
+	}
+
+	protected function GetCoverImageUrl(): string{
+		if($this->_CoverImageUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			$this->CoverImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover.jpg';
+		}
+
+		return $this->_CoverImageUrl;
+	}
+
+	protected function GetCoverImageAvifUrl(): string{
+		if($this->_CoverImageAvifUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover.avif')){
+				$this->_CoverImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover.avif';
+			}
+		}
+
+		return $this->_CoverImageAvifUrl;
+	}
+
+	protected function GetCoverImage2xUrl(): string{
+		if($this->_CoverImage2xUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			$this->_CoverImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover@2x.jpg';
+		}
+
+		return $this->_CoverImage2xUrl;
+	}
+
+	protected function GetCoverImage2xAvifUrl(): string{
+		if($this->_CoverImage2xAvifUrl === null){
+			$gitCommits = $this->GitCommits;
+			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover@2x.avif')){
+				$this->_CoverImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover@2x.avif';
+			}
+		}
+
+		return $this->_CoverImage2xAvifUrl;
 	}
 
 	protected function GetContributorsHtml(): string{
@@ -562,28 +647,6 @@ class Ebook extends Accessor{
 			$gitCommits[] = GitCommit::FromLog($array[0], $array[1], $array[2]);
 		}
 		$ebookFromFilesystem->GitCommits = $gitCommits;
-
-		// Get cover image URLs.
-		$gitFolderPath = $ebookFromFilesystem->RepoFilesystemPath;
-		if(stripos($ebookFromFilesystem->RepoFilesystemPath, '.git') === false){
-			$gitFolderPath = $gitFolderPath . '/.git';
-		}
-		$hash = substr(sha1($ebookFromFilesystem->GitCommits[0]->Created->format('U') . ' ' . $ebookFromFilesystem->GitCommits[0]->Message), 0, 8);
-		$ebookFromFilesystem->CoverImageUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-cover.jpg';
-		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-cover.avif')){
-			$ebookFromFilesystem->CoverImageAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-cover.avif';
-		}
-		$ebookFromFilesystem->CoverImage2xUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-cover@2x.jpg';
-		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-cover@2x.avif')){
-			$ebookFromFilesystem->CoverImage2xAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-cover@2x.avif';
-		}
-		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-hero.avif')){
-			$ebookFromFilesystem->HeroImageAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-hero.avif';
-		}
-		$ebookFromFilesystem->HeroImage2xUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-hero@2x.jpg';
-		if(file_exists(WEB_ROOT . '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-hero@2x.avif')){
-			$ebookFromFilesystem->HeroImage2xAvifUrl = '/images/covers/' . $ebookFromFilesystem->UrlSafeIdentifier . '-' . $hash . '-hero@2x.avif';
-		}
 
 		// Now do some heavy XML lifting!
 		$xml = new SimpleXMLElement(str_replace('xmlns=', 'ns=', $rawMetadata));
