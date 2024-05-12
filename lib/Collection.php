@@ -1,18 +1,28 @@
 <?
 use function Safe\preg_replace;
 
-class Collection{
+/**
+ * @property string $Url
+ */
+class Collection extends Accessor{
 	public string $Name;
 	public string $UrlName;
-	public string $Url;
 	public ?int $SequenceNumber = null;
 	public ?string $Type = null;
+	protected ?string $_Url = null;
+
+	protected function GetUrl(): string{
+		if($this->_Url === null){
+			$this->Url = '/collections/' . $this->UrlName;
+		}
+
+		return $this->_Url;
+	}
 
 	public static function FromFile(string $name){
 		$instance = new Collection();
 		$instance->Name = $name;
 		$instance->UrlName = Formatter::MakeUrlSafe($instance->Name);
-		$instance->Url = '/collections/' . $instance->UrlName;
 		return $instance;
 	}
 
