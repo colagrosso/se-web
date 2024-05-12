@@ -322,13 +322,14 @@ class Ebook extends Accessor{
 		return $this->_UrlSafeIdentifier;
 	}
 
+	private function GetLatestCommitHash(): string{
+		$gitCommits = $this->GitCommits;
+		return substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
+	}
+
 	protected function GetHeroImageUrl(): string{
 		if($this->_HeroImageUrl === null){
-			$gitCommits = $this->GitCommits;
-//error_log(print_r('HeroImageUrl with $this->GitCommits: ', true));
-//error_log(print_r($this->GitCommits, true));
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
-			$this->HeroImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero.jpg';
+			$this->HeroImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero.jpg';
 		}
 
 		return $this->_HeroImageUrl;
@@ -336,10 +337,8 @@ class Ebook extends Accessor{
 
 	protected function GetHeroImageAvifUrl(): string{
 		if($this->_HeroImageAvifUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero.avif')){
-				$this->_HeroImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero.avif';
+				$this->_HeroImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero.avif';
 			}
 		}
 
@@ -348,9 +347,7 @@ class Ebook extends Accessor{
 
 	protected function GetHeroImage2xUrl(): string{
 		if($this->_HeroImage2xUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
-			$this->_HeroImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero@2x.jpg';
+			$this->_HeroImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero@2x.jpg';
 		}
 
 		return $this->_HeroImage2xUrl;
@@ -358,10 +355,8 @@ class Ebook extends Accessor{
 
 	protected function GetHeroImage2xAvifUrl(): string{
 		if($this->_HeroImage2xAvifUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero@2x.avif')){
-				$this->_HeroImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-hero@2x.avif';
+				$this->_HeroImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero@2x.avif';
 			}
 		}
 
@@ -370,9 +365,7 @@ class Ebook extends Accessor{
 
 	protected function GetCoverImageUrl(): string{
 		if($this->_CoverImageUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
-			$this->CoverImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover.jpg';
+			$this->CoverImageUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover.jpg';
 		}
 
 		return $this->_CoverImageUrl;
@@ -380,10 +373,8 @@ class Ebook extends Accessor{
 
 	protected function GetCoverImageAvifUrl(): string{
 		if($this->_CoverImageAvifUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover.avif')){
-				$this->_CoverImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover.avif';
+				$this->_CoverImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover.avif';
 			}
 		}
 
@@ -392,9 +383,7 @@ class Ebook extends Accessor{
 
 	protected function GetCoverImage2xUrl(): string{
 		if($this->_CoverImage2xUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
-			$this->_CoverImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover@2x.jpg';
+			$this->_CoverImage2xUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover@2x.jpg';
 		}
 
 		return $this->_CoverImage2xUrl;
@@ -402,10 +391,8 @@ class Ebook extends Accessor{
 
 	protected function GetCoverImage2xAvifUrl(): string{
 		if($this->_CoverImage2xAvifUrl === null){
-			$gitCommits = $this->GitCommits;
-			$hash = substr(sha1($gitCommits[0]->Created->format('U') . ' ' . $gitCommits[0]->Message), 0, 8);
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover@2x.avif')){
-				$this->_CoverImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $hash . '-cover@2x.avif';
+				$this->_CoverImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover@2x.avif';
 			}
 		}
 
@@ -692,7 +679,7 @@ class Ebook extends Accessor{
 			foreach($tocDom->xpath('/html/body//nav[@epub:type="toc"]//a[not(contains(@epub:type, "z3998:roman")) and not(text() = "Titlepage" or text() = "Imprint" or text() = "Colophon" or text() = "Endnotes" or text() = "Uncopyright") and not(contains(@href, "halftitle"))]') ?: [] as $item){
 				$tocEntries[] = (string)$item;
 			}
-			$ebookFromFilesystem->TocEntries = $tocEntries; 
+			$ebookFromFilesystem->TocEntries = $tocEntries;
 		}
 
 		// Get SE collections
