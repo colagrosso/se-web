@@ -65,10 +65,16 @@ class Ebook extends Accessor{
 	public DateTimeImmutable $EbookCreated;
 	public DateTimeImmutable $EbookUpdated;
 	public ?int $TextSinglePageByteCount = null;
+	protected $_GitCommits = null;
 	protected $_Tags = null;
 	protected $_LocSubjects = null;
-	protected $_GitCommits = null;
 	protected $_Collections = null;
+	protected $_Sources = null;
+	protected $_Authors = null;
+	protected $_Illustrators = null;
+	protected $_Translators = null;
+	protected $_Contributors = null;
+	protected $_TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
 	protected ?string $_Url = null;
 	protected ?bool $_HasDownloads = null;
 	protected ?string $_UrlSafeIdentifier = null;
@@ -82,20 +88,14 @@ class Ebook extends Accessor{
 	protected ?string $_CoverImage2xAvifUrl = null;
 	protected ?string $_ReadingEaseDescription = null;
 	protected ?string $_ReadingTime = null;
-	protected $_Sources = null;
-	protected $_Authors = null;
 	protected ?string $_AuthorsHtml = null;
 	protected ?string $_AuthorsUrl = null; // This is a single URL even if there are multiple authors; for example, /ebooks/karl-marx_friedrich-engels/
-	protected $_Illustrators = null;
-	protected $_Translators = null;
-	protected $_Contributors = null;
 	protected ?string $_ContributorsHtml = null;
 	protected ?string $_TitleWithCreditsHtml = null;
 	protected ?string $_TextUrl = null;
 	protected ?string $_TextSinglePageUrl = null;
 	protected ?string $_TextSinglePageSizeNumber = null;
 	protected ?string $_TextSinglePageSizeUnit = null;
-	protected $_TocEntries = null; // A list of non-Roman ToC entries ONLY IF the work has the 'se:is-a-collection' metadata element, null otherwise
 	protected ?string $_IndexableText = null;
 
 	// *******
@@ -155,71 +155,6 @@ class Ebook extends Accessor{
 		return $this->_Collections;
 	}
 
-	protected function GetReadingEaseDescription(): string{
-		if($this->_ReadingEaseDescription === null){
-			if($this->ReadingEase > 89){
-				$this->_ReadingEaseDescription = 'very easy';
-			}
-
-			if($this->ReadingEase >= 79 && $this->ReadingEase <= 89){
-				$this->_ReadingEaseDescription = 'easy';
-			}
-
-			if($this->ReadingEase > 69 && $this->ReadingEase <= 79){
-				$this->_ReadingEaseDescription = 'fairly easy';
-			}
-
-			if($this->ReadingEase > 59 && $this->ReadingEase <= 69){
-				$this->_ReadingEaseDescription = 'average difficulty';
-			}
-
-			if($this->ReadingEase > 49 && $this->ReadingEase <= 59){
-				$this->_ReadingEaseDescription = 'fairly difficult';
-			}
-
-			if($this->ReadingEase > 39 && $this->ReadingEase <= 49){
-				$this->_ReadingEaseDescription = 'difficult';
-			}
-
-			if($this->ReadingEase <= 39){
-				$this->_ReadingEaseDescription = 'very difficult';
-			}
-		}
-
-		return $this->_ReadingEaseDescription;
-	}
-
-	protected function GetReadingTime(): string{
-		if($this->_ReadingTime === null){
-			$readingTime = ceil($this->WordCount / AVERAGE_READING_WORDS_PER_MINUTE);
-			$this->_ReadingTime = (string)$readingTime;
-
-			if($readingTime < 60){
-				$this->_ReadingTime .= ' minute';
-				if($readingTime != 1){
-					$this->_ReadingTime .= 's';
-				}
-			}
-			else{
-				$readingTimeHours = floor($readingTime / 60);
-				$readingTimeMinutes = ceil($readingTime % 60);
-				$this->_ReadingTime = $readingTimeHours . ' hour';
-				if($readingTimeHours != 1){
-					$this->_ReadingTime .= 's';
-				}
-
-				if($readingTimeMinutes != 0){
-					$this->_ReadingTime .= ' ' . $readingTimeMinutes . ' minute';
-					if($readingTimeMinutes != 1){
-						$this->_ReadingTime .= 's';
-					}
-				}
-			}
-		}
-
-		return $this->_ReadingTime;
-	}
-
 	protected function GetSources(): array{
 		if($this->_Sources === null){
 			$this->_Sources = Db::Query('
@@ -243,22 +178,6 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_Authors;
-	}
-
-	protected function GetAuthorsHtml(): string{
-		if($this->_AuthorsHtml === null){
-			$this->_AuthorsHtml = Ebook::GenerateContributorList($this->Authors, true);
-		}
-
-		return $this->_AuthorsHtml;
-	}
-
-	protected function GetAuthorsUrl(): string{
-		if($this->_AuthorsUrl === null){
-			$this->_AuthorsUrl = preg_replace('|url:https://standardebooks.org/ebooks/([^/]+)/.*|ius', '/ebooks/\1', $this->Identifier);
-		}
-
-		return $this->_AuthorsUrl;
 	}
 
 	protected function GetIllustrators(): array{
@@ -298,6 +217,24 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_Contributors;
+	}
+
+	protected function GetTocEntries(): array{
+		if($this->_TocEntries === null){
+			$this->_TocEntries = [];
+
+			$result = Db::Query('
+					SELECT *
+					from TocEntries
+					where EbookId = ?
+				', [$this->EbookId], 'stdClass');
+
+			foreach($result as $row){
+				$this->_TocEntries[] = $row->TocEntry;
+			}
+		}
+
+		return $this->_TocEntries;
 	}
 
 	protected function GetUrl(): string{
@@ -401,6 +338,87 @@ class Ebook extends Accessor{
 		return $this->_CoverImage2xAvifUrl;
 	}
 
+	protected function GetReadingEaseDescription(): string{
+		if($this->_ReadingEaseDescription === null){
+			if($this->ReadingEase > 89){
+				$this->_ReadingEaseDescription = 'very easy';
+			}
+
+			if($this->ReadingEase >= 79 && $this->ReadingEase <= 89){
+				$this->_ReadingEaseDescription = 'easy';
+			}
+
+			if($this->ReadingEase > 69 && $this->ReadingEase <= 79){
+				$this->_ReadingEaseDescription = 'fairly easy';
+			}
+
+			if($this->ReadingEase > 59 && $this->ReadingEase <= 69){
+				$this->_ReadingEaseDescription = 'average difficulty';
+			}
+
+			if($this->ReadingEase > 49 && $this->ReadingEase <= 59){
+				$this->_ReadingEaseDescription = 'fairly difficult';
+			}
+
+			if($this->ReadingEase > 39 && $this->ReadingEase <= 49){
+				$this->_ReadingEaseDescription = 'difficult';
+			}
+
+			if($this->ReadingEase <= 39){
+				$this->_ReadingEaseDescription = 'very difficult';
+			}
+		}
+
+		return $this->_ReadingEaseDescription;
+	}
+
+	protected function GetReadingTime(): string{
+		if($this->_ReadingTime === null){
+			$readingTime = ceil($this->WordCount / AVERAGE_READING_WORDS_PER_MINUTE);
+			$this->_ReadingTime = (string)$readingTime;
+
+			if($readingTime < 60){
+				$this->_ReadingTime .= ' minute';
+				if($readingTime != 1){
+					$this->_ReadingTime .= 's';
+				}
+			}
+			else{
+				$readingTimeHours = floor($readingTime / 60);
+				$readingTimeMinutes = ceil($readingTime % 60);
+				$this->_ReadingTime = $readingTimeHours . ' hour';
+				if($readingTimeHours != 1){
+					$this->_ReadingTime .= 's';
+				}
+
+				if($readingTimeMinutes != 0){
+					$this->_ReadingTime .= ' ' . $readingTimeMinutes . ' minute';
+					if($readingTimeMinutes != 1){
+						$this->_ReadingTime .= 's';
+					}
+				}
+			}
+		}
+
+		return $this->_ReadingTime;
+	}
+
+	protected function GetAuthorsHtml(): string{
+		if($this->_AuthorsHtml === null){
+			$this->_AuthorsHtml = Ebook::GenerateContributorList($this->Authors, true);
+		}
+
+		return $this->_AuthorsHtml;
+	}
+
+	protected function GetAuthorsUrl(): string{
+		if($this->_AuthorsUrl === null){
+			$this->_AuthorsUrl = preg_replace('|url:https://standardebooks.org/ebooks/([^/]+)/.*|ius', '/ebooks/\1', $this->Identifier);
+		}
+
+		return $this->_AuthorsUrl;
+	}
+
 	protected function GetContributorsHtml(): string{
 		if($this->_ContributorsHtml === null){
 			$this->_ContributorsHtml = '';
@@ -483,24 +501,6 @@ class Ebook extends Accessor{
 		}
 
 		return $this->_TextSinglePageSizeUnit;
-	}
-
-	protected function GetTocEntries(): array{
-		if($this->_TocEntries === null){
-			$this->_TocEntries = [];
-
-			$result = Db::Query('
-					SELECT *
-					from TocEntries
-					where EbookId = ?
-				', [$this->EbookId], 'stdClass');
-
-			foreach($result as $row){
-				$this->_TocEntries[] = $row->TocEntry;
-			}
-		}
-
-		return $this->_TocEntries;
 	}
 
 	protected function GetIndexableText(): string{

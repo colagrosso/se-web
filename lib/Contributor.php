@@ -8,7 +8,6 @@ class Contributor{
 	public ?string $FullName = null;
 	public ?string $NacoafUrl = null;
 
-	//public function __construct(string $name, string $sortName = null, string $fullName = null, string $wikipediaUrl = null, string $marcRole = null, string $nacoafUrl = null){
 	public static function FromFile(string $name, string $sortName = null, string $fullName = null, string $wikipediaUrl = null, string $marcRole = null, string $nacoafUrl = null){
 		$instance = new Contributor();
 		$instance->Name = str_replace('\'', '’', $name);
