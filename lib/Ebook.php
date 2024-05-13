@@ -122,6 +122,7 @@ class Ebook extends Accessor{
 						from Tags t
 						inner join EbookTags et using (TagId)
 						where EbookId = ?
+						order by et.EbookTagId
 					', [$this->EbookId], 'EbookTag');
 		}
 
@@ -135,6 +136,7 @@ class Ebook extends Accessor{
 							from LocSubjects l
 							inner join EbookLocSubjects el using (LocSubjectId)
 							where EbookId = ?
+							order by el.EbookLocSubjectId
 					', [$this->EbookId], 'LocSubject');
 		}
 
@@ -335,7 +337,7 @@ class Ebook extends Accessor{
 		return $this->_HeroImageUrl;
 	}
 
-	protected function GetHeroImageAvifUrl(): string{
+	protected function GetHeroImageAvifUrl(): ?string{
 		if($this->_HeroImageAvifUrl === null){
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero.avif')){
 				$this->_HeroImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero.avif';
@@ -353,7 +355,7 @@ class Ebook extends Accessor{
 		return $this->_HeroImage2xUrl;
 	}
 
-	protected function GetHeroImage2xAvifUrl(): string{
+	protected function GetHeroImage2xAvifUrl(): ?string{
 		if($this->_HeroImage2xAvifUrl === null){
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-hero@2x.avif')){
 				$this->_HeroImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-hero@2x.avif';
@@ -371,7 +373,7 @@ class Ebook extends Accessor{
 		return $this->_CoverImageUrl;
 	}
 
-	protected function GetCoverImageAvifUrl(): string{
+	protected function GetCoverImageAvifUrl(): ?string{
 		if($this->_CoverImageAvifUrl === null){
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover.avif')){
 				$this->_CoverImageAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover.avif';
@@ -389,7 +391,7 @@ class Ebook extends Accessor{
 		return $this->_CoverImage2xUrl;
 	}
 
-	protected function GetCoverImage2xAvifUrl(): string{
+	protected function GetCoverImage2xAvifUrl(): ?string{
 		if($this->_CoverImage2xAvifUrl === null){
 			if(file_exists(WEB_ROOT . '/images/covers/' . $this->UrlSafeIdentifier . '-cover@2x.avif')){
 				$this->_CoverImage2xAvifUrl = '/images/covers/' . $this->UrlSafeIdentifier . '-' . $this->GetLatestCommitHash() . '-cover@2x.avif';
