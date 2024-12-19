@@ -20,6 +20,17 @@ class Db{
 	}
 
 	/**
+	 * @template T
+	 * @param string $query
+	 * @param array<mixed> $args
+	 * @param class-string<T> $class
+	 * @return array<T>
+	 */
+	public static function MultiTableSelect(string $query, array $args = [], string $class = null): array{
+		return $GLOBALS['DbConnection']->MultiTableSelect($query, $args, $class);
+	}
+
+	/**
 	 * Returns a single integer value for the first column database query result.
 	 *
 	 * This is useful for queries that return a single integer as a result, like `count(*)` or `sum(*)`.

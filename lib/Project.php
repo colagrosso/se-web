@@ -638,7 +638,7 @@ final class Project{
 	 * @return array<Project>
 	 */
 	public static function GetAllByStatus(Enums\ProjectStatusType $status): array{
-		return Db::Query('SELECT * from Projects inner join Ebooks using (EbookId) where Projects.Status = ? order by Title asc', [$status], Project::class);
+		return Db::MultiTableSelect('SELECT * from Projects inner join Ebooks using (EbookId) where Projects.Status = ? order by Title asc', [$status], Project::class);
 	}
 
 	/**
@@ -663,9 +663,8 @@ final class Project{
 	public static function FromMultiTableRow(array $row): Project{
 		$object = Project::FromRow($row['Projects']);
 
-		// The Action may be null if it's a Scribophile adjustment. In that case, don't initialize the Action object.
-		if($row['Ebooks']->EbookId !== null){
-			$row['Ebooks']->Ebookid = $object->EbookId;
+		if($object->EbookId !== null){
+			$row['Ebooks']->EbookId = $object->EbookId;
 			$object->Ebook = Ebook::FromRow($row['Ebooks']);
 		}
 
