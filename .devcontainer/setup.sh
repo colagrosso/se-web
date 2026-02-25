@@ -62,9 +62,9 @@ sudo a2dissite 000-default || true
 # as an anti-leeching measure. But the Codespaces proxy always sets that header,
 # so we comment those two lines out or every request would get a 403.
 sudo sed -i 's/RewriteCond.*X-Forwarded-For.*/#&/' \
-    "$WEB/config/apache/standardebooks.test.conf"
+    /etc/apache2/sites-available/standardebooks.test.conf
 sudo sed -i 's/RewriteCond.*CF-Connecting-IP.*/#&/' \
-    "$WEB/config/apache/standardebooks.test.conf"
+    /etc/apache2/sites-available/standardebooks.test.conf
 
 # The repo's Apache config sets UseCanonicalName On globally, which causes
 # Apache to use the ServerName directive when constructing redirect URLs.
