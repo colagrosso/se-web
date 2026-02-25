@@ -13,6 +13,9 @@ vendor/
 www/manual/*
 !www/manual/index.php
 config/apache/htpasswd-standardebooks.org
+config/php/fpm/codespaces-prepend.php
 config/php/fpm/standardebooks.org-secrets.ini
+config/php/fpm/standardebooks.test-secrets.ini
 www/bulk-downloads/*/
 .venv
+
