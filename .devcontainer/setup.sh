@@ -85,6 +85,9 @@ sudo ln -sf "$WEB/config/php/fpm/standardebooks.test-secrets.ini" \
 sudo ln -sf "$WEB/config/php/fpm/standardebooks.test.conf" \
     "/etc/php/$PHP_VER/fpm/pool.d/standardebooks.test.conf"
 
+echo "auto_prepend_file = /standardebooks.org/web/config/php/fpm/codespaces-prepend.php" \
+    | sudo tee /etc/php/$PHP_VER/fpm/conf.d/codespaces.ini
+
 echo "==> Wiring up MariaDB..."
 sudo ln -sf "$WEB/config/mariadb/99-se.cnf" \
     /etc/mysql/mariadb.conf.d/99-se.cnf
