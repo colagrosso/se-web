@@ -1,0 +1,17 @@
+{
+  "name": "SE Web",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start-services.sh",
+  "forwardPorts": [80],
+  "portsAttributes": {
+    "80": {
+      "label": "SE Website",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remoteUser": "codespace"
+}
