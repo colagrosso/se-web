@@ -48,9 +48,13 @@ sudo a2enmod headers expires ssl rewrite proxy proxy_fcgi xsendfile
 echo "==> Configuring Apache..."
 # ==============================================================================
 
-# Link and enable the repo's Apache config for standardebooks.test
-sudo ln -sf "$WEB/config/apache/standardebooks.test.conf" \
-    /etc/apache2/sites-available/standardebooks.test.conf
+## Mike C.: Copying instead of linking because we need to modify the file with sed below.
+## Link and enable the repo's Apache config for standardebooks.test
+#sudo ln -sf "$WEB/config/apache/standardebooks.test.conf" \
+#    /etc/apache2/sites-available/standardebooks.test.conf
+sudo cp "$WEB/config/apache/standardebooks.test.conf" \
+	    /etc/apache2/sites-available/standardebooks.test.conf
+
 sudo a2ensite standardebooks.test
 sudo a2dissite 000-default || true
 
