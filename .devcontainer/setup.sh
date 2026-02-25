@@ -48,26 +48,25 @@ sudo a2enmod headers expires ssl rewrite proxy proxy_fcgi xsendfile
 echo "==> Configuring Apache..."
 # ==============================================================================
 
-## Mike C.: Copying instead of linking because we need to modify the file with sed below.
-## Link and enable the repo's Apache config for standardebooks.test
-#sudo ln -sf "$WEB/config/apache/standardebooks.test.conf" \
-#    /etc/apache2/sites-available/standardebooks.test.conf
+# Copy (not symlink) the repo's Apache config so we can patch it without
+# modifying the tracked file and causing git to show it as modified.
 sudo cp "$WEB/config/apache/standardebooks.test.conf" \
-	    /etc/apache2/sites-available/standardebooks.test.conf
-
-sudo a2ensite standardebooks.test
-sudo a2dissite 000-default || true
+    /etc/apache2/sites-available/standardebooks.test.conf
 
 # The repo's Apache config blocks all requests that have X-Forwarded-For set,
 # as an anti-leeching measure. But the Codespaces proxy always sets that header,
-# so we comment those two lines out or every request would get a 403.
+# so every request would get a 403. Comment those two lines out in the copy.
 sudo sed -i 's/RewriteCond.*X-Forwarded-For.*/#&/' \
     /etc/apache2/sites-available/standardebooks.test.conf
 sudo sed -i 's/RewriteCond.*CF-Connecting-IP.*/#&/' \
     /etc/apache2/sites-available/standardebooks.test.conf
 
+sudo a2ensite standardebooks.test
+sudo a2dissite 000-default || true
+
 # The repo's Apache config sets UseCanonicalName On globally, which causes
-# Apache to use the ServerName directive when constructing redirect URLs.
+# Apache to use the ServerName directive when constructing redirect URLs,
+# giving us http://_/about/ instead of the correct Codespaces URL.
 # We override it here so Apache uses the Host header instead.
 echo "UseCanonicalName Off" \
     | sudo tee /etc/apache2/conf-available/codespaces.conf > /dev/null
@@ -150,10 +149,15 @@ PHPEOF
 sudo mv /tmp/codespaces-prepend.php \
     "$WEB/config/php/fpm/codespaces-prepend.php"
 
-# Write the auto_prepend_file setting to a Codespaces-only ini file,
-# separate from the repo's ini files so it doesn't show up in git diff.
-echo "auto_prepend_file = $WEB/config/php/fpm/codespaces-prepend.php" \
-    | sudo tee "/etc/php/$PHP_VER/fpm/conf.d/codespaces.ini" > /dev/null
+# Write Codespaces-specific PHP-FPM settings to zz-codespaces.ini.
+# The zz- prefix ensures this file loads last and overrides everything else,
+# including the repo's standardebooks.test.ini which sets
+# opcache.validate_timestamps = Off (correct for production, wrong for dev).
+cat << EOINI | sudo tee "/etc/php/$PHP_VER/fpm/conf.d/zz-codespaces.ini" > /dev/null
+auto_prepend_file = $WEB/config/php/fpm/codespaces-prepend.php
+opcache.validate_timestamps = On
+opcache.revalidate_freq = 0
+EOINI
 
 # ==============================================================================
 echo "==> Configuring MariaDB..."
