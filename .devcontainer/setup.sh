@@ -45,6 +45,7 @@ sudo tee /etc/apache2/sites-available/codespaces-catchall.conf > /dev/null <<'EO
 <VirtualHost *:80>
     ServerName _
     ServerAlias *
+    UseCanonicalName Off
 
     DocumentRoot /standardebooks.org/web/www
 
