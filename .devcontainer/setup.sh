@@ -87,6 +87,7 @@ sudo ln -sf "$WEB/config/php/fpm/standardebooks.test.conf" \
 echo "==> Wiring up MariaDB..."
 sudo ln -sf "$WEB/config/mariadb/99-se.cnf" \
     /etc/mysql/mariadb.conf.d/99-se.cnf
+sudo chmod 644 "$WEB/config/mariadb/99-se.cnf"
 
 echo "==> Creating users and groups..."
 sudo useradd -r se 2>/dev/null || true
@@ -104,7 +105,9 @@ sudo service apache2 start
 echo "==> Setting up the SE database..."
 sudo mariadb < "$WEB/config/sql/se.sql"
 sudo mariadb < "$WEB/config/sql/users.sql"
-sudo mariadb se < "$WEB/config/sql/se/"*.sql
+for f in "$WEB/config/sql/se/"*.sql; do
+    sudo mariadb se < "$f"
+done
 
 echo "==> Creating ebooks directory..."
 mkdir -p "$SITE/ebooks"
