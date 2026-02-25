@@ -42,4 +42,7 @@ RUN useradd -m -s /bin/bash codespace \
 # Pre-create the site directory so the volume mount works cleanly
 RUN mkdir -p /standardebooks.org && chown codespace: /standardebooks.org
 
+RUN echo "opcache.validate_timestamps=1" >> /etc/php/*/fpm/php.ini \
+    && echo "opcache.revalidate_freq=0" >> /etc/php/*/fpm/php.ini
+
 USER codespace
