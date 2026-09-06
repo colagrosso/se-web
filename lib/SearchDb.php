@@ -1,4 +1,6 @@
 <?
+use function Safe\preg_match;
+
 /**
  * Provides a PDO connection for SQL queries against an external search database.
  */
@@ -96,7 +98,16 @@ class SearchDb extends Db{
 			$result = parent::Query($sql, $params, $class);
 		}
 		catch(Exceptions\DatabaseQueryException $ex){
-			if(strpos($ex->getMessage(), 'P08: syntax error') !== false){
+			// Invalid search operators, field lists, and thresholds also require an escaped search retry.
+			if(preg_match('/P08: syntax error|query error: (?:'
+				. 'query is non-computable \('
+				. '|error parsing field list: '
+				. '|quorum threshold (?:too low \(|out of bounds )'
+				. '|proximity threshold too low \('
+				. '|NEAR distance too low \('
+				. '|no field \'[^\']*\' found in schema'
+				. '|unexpected character \'.\' in zone block operator'
+				. ')/s', $ex->getMessage())){
 				throw new Exceptions\SearchSyntaxInvalidException();
 			}
 			else{
@@ -153,7 +164,7 @@ class SearchDb extends Db{
 	public static function GetLastQueryTotalResultCount(): ?int{
 		try{
 			// N.B.: escaped *single* quotes required.
-			$metaResult = static::Query('SHOW meta like \'total%\'');
+			$metaResult = static::Query('show meta like \'total%\'');
 			$totalRelation = null;
 			$totalFound = null;
 
