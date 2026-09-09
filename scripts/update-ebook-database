@@ -31,6 +31,10 @@ function Usage(): void{
 	);
 }
 
+if(!isset($argc, $argv)){
+	Cli::ExitWithError('Command-line arguments are unavailable.');
+}
+
 $restIndex = 0;
 $options = getopt('hv', ['help', 'verbose', 'cover-image-key:', 'repo-filesystem-path:'], $restIndex);
 $restIndex ??= $argc;
